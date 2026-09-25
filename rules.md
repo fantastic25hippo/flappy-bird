@@ -80,7 +80,7 @@ Difficulty dynamically scales with score across 4 stages:
 
 | Stage | Score Range | Scroll Speed (`spd`) | Gap Type | Gap Height (`GAP_H`) | Vertical Gap Variation |
 |:-----:|:-----------:|:--------------------:|:--------:|:--------------------:|:-----------------------|
-| **0** | $0 \le score < 8$ | 2 px/tick | Type 0 | 128 px | Stays within 48 px of sibling $gy$ |
+| **0** | $0 \le score < 8$ | 3 px/tick | Type 0 | 128 px | Stays within 48 px of sibling $gy$ |
 | **1** | $8 \le score < 16$ | 3 px/tick | Type 0 | 128 px | Stays within 96 px of sibling $gy$ |
 | **2** | $16 \le score < 24$ | 4 px/tick | Type 1 | 112 px | Full mixer range $[64, 304]$ |
 | **3** | $score \ge 24$ | 4 px/tick | Type 1 or 2 | 112 px or 96 px (`nseed & 1`) | Full mixer range $[64, 304]$ |
@@ -89,16 +89,13 @@ Difficulty dynamically scales with score across 4 stages:
 
 ---
 
-## 6. Atmosphere & Weather System
+## 6. Atmosphere & Background
 
 - **Parallax Clouds:**
   - Four clouds with right edges $cx, dx$ (near layer, speed 2 px/tick) and $ex, fx$ (far layer, speed 1 px/tick), width 80 px (`CLOUD_W`). Wrap to 600 when exiting left.
   - Initial positions: $cx = 120, dx = 220$ (100 px apart), $ex = 400, fx = 500$ (100 px apart).
-- **Storm Trigger (`Game.storm`):**
-  - Triggers when any triple of $(cx, dx, ex, fx)$ clusters within a span of $\le 160$ px (`STORM_SPAN`).
-  - Fair weather at $t = 0$ ($span > 160$ across all triples).
-  - Parallax speeds allow near and far clouds to converge dynamically into storm clusters.
-- **Weather Effects:**
-  - **Fair Weather:** Bright sky palette, sun (yellow core `COLOR_4`, orange-red rays `COLOR_1`).
-  - **Storm Weather:** Darkened storm sky palette when `Game.storm` triggers (rain was cut; storm darkening kept).
+  - Parallax speeds allow clouds to drift at two distinct rates.
+- **Sky & Sun:**
+  - Fair-weather sky bands (`SKY_TOP`, `SKY_MID`, `SKY_PALE`), sun (yellow core `COLOR_4`, orange-red rays `COLOR_1`).
+  - No storm detection, no rain, no storm sky palette.
 - **Native Color Packing:** All colors are packed in 32-bit `0x00RRGGBB` format matching native Linux X11 framebuffers.

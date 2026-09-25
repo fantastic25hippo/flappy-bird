@@ -97,3 +97,25 @@ This document tracks the diagnosis, root causes, and resolutions for confirmed i
   - `AGENTS.md`: items 4, 6, prohibitions, and laws updated.
 - **Status:** **FIXED (removed)**.
 
+---
+
+### Bug 6: Storm Sky Darkening Cut & Initial Scroll Speed Tuning (Fixed - Removed / Updated)
+
+- **Description:**
+  Following the removal of rain in commit `4c55682`, Sahil requested cutting the remaining storm detection logic and the darker storm sky palette entirely, leaving sky rendering purely fair-weather. In addition, Sahil requested increasing the starting scroll speed from 2 to 3 px/tick (matching player feel around score 8–10).
+- **Root Cause & Sites:**
+  - `Game.storm`, `Game.min2`/`max2`/`min3`/`max3`/`span3`, `STORM_SPAN`, and darker sky constants `STORM_TOP`, `STORM_MID`, `STORM_PALE`.
+  - In `Game.color`, sky color selection picked between `STORM_*` and `SKY_*` based on `Game.storm`.
+  - In `Game.speed_of`, initial speed was set to 2 before score 8; in `Game.init`, initial `spd` was set to 2.
+- **Fix Applied:**
+  - Removed `STORM_TOP`, `STORM_MID`, `STORM_PALE`, `STORM_SPAN`, `Game.min2`/`max2`/`min3`/`max3`/`span3`, and `Game.storm` from `main.bend`.
+  - `Game.color` renders fair-weather sky bands (`SKY_TOP`, `SKY_MID`, `SKY_PALE`) directly.
+  - Clouds, distant birds, and `wt` weather clock are preserved as purely decorative background elements.
+  - Set starting scroll speed in `Game.speed_of` to 3 for scores $< 16$, and set initial `spd` in `Game.init` to 3.
+  - Re-froze invariant laws in `LAWS.bend` (L7, L12, L13, L14), updated `AGENTS.md`, `rules.md`, and objectives.
+- **Pointers:**
+  - `main.bend`: removed storm constants/helpers; updated `Game.speed_of` and `Game.init`.
+  - `LAWS.bend`: L7, L12, L13, L14 re-frozen with start spd 3 and no storm sky.
+  - `AGENTS.md`, `rules.md`, `bugs.md`.
+- **Status:** **FIXED (removed / updated)**.
+

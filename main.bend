@@ -9,11 +9,10 @@
 # band, and field patches are pure decoration over a two-tone ground
 # (grass over dirt) and never
 # collide. Four cloud clusters drift at parallax speeds and two tiny
-# distant birds slide across the upper third. Clustered clouds brew a
-# storm: darker sky bands, all decorative.
+# distant birds slide across the upper third, all decorative.
 # Score draws as a framed 3-digit 7-segment HUD at top-center while
 # playing. Esc key-down or Close quits whatever the mode. Difficulty is
-# staged from score: scroll speeds 2/3/4 and, from 16 pillars, mid
+# staged from score: scroll speeds 3/4 and, from 16 pillars, mid
 # then tight holes.
 #
 #   bend main.bend -o flappy && ./flappy
@@ -92,7 +91,7 @@ type Game is Data:
 # Init starts all four clouds on-screen and spaced (cx 120, dx 220,
 # ex 400, fx 500) with the weather clock wt = 0.
 def Game.init() -> Game:
-  Game{256, 0, True{}, 552, 160, 0, 0, False{}, 832, 224, 1, 0, False{}, 123456789, 0, 0, 2, False{}, False{}, 120, 220, 400, 500, 0}
+  Game{256, 0, True{}, 552, 160, 0, 0, False{}, 832, 224, 1, 0, False{}, 123456789, 0, 0, 3, False{}, False{}, 120, 220, 400, 500, 0}
 
 # Dead restart restores Game.init(), but keeps the live key states so
 # a held Space can never instantly flap after the R restart.
@@ -224,10 +223,10 @@ def Game.capw(+px: U32) -> U32:
 def Game.mix(+seed: U32) -> U32:
   ((seed * 1664525 : U32) + 1013904223 : U32)
 
-# Staged scroll speed from score: 2 before 8 pillars, 3 before 16, 4
+# Staged scroll speed from score: 3 before 16 pillars, 4
 # after.
 def Game.speed_of(+score: U32) -> U32:
-  Game.pick((score < 8 : U32), 2, Game.pick((score < 16 : U32), 3, 4))
+  Game.pick((score < 8 : U32), 3, Game.pick((score < 16 : U32), 3, 4))
 
 # Gap height of a pair from its stored type alone (never score): type
 # 0 the normal hole, type 1 the mid hole, type 2 the tight hole.
@@ -659,8 +658,7 @@ def Game.hud_score(+x: U32, +y: U32, +score: U32) -> Bool:
     || Game.digit_c_at(Game.digit_mask(d0), 266, 13, x, y)
 
 # Background atmosphere (decorative only, never colliding): three sky
-# bands covering y 0..496 (a fair trio, or the darker STORM trio when
-# Game.storm holds), a static sun cluster around (420, 64),
+# bands covering y 0..496, a static sun cluster around (420, 64),
 # mountains and hills sitting on the ground line behind the pipes, the
 # sea band y 480..496 with its lighter foam line y 480..484, and two
 # green field patches on the ground line. The ground is two-tone:
@@ -669,11 +667,6 @@ def Game.hud_score(+x: U32, +y: U32, +score: U32) -> Bool:
 def SKY_TOP() -> U32: 4223160
 def SKY_MID() -> U32: 6856920
 def SKY_PALE() -> U32: 11589872
-# Darker storm sky palettes: the same three full-width uniform bands
-# (still quadtree-flat), used whenever Game.storm holds.
-def STORM_TOP() -> U32: 2243168
-def STORM_MID() -> U32: 3428472
-def STORM_PALE() -> U32: 4744840
 def HILLS_TINT() -> U32: 4751480
 # Mountains: darker than HILLS_TINT.
 def MOUNT_TINT() -> U32: 2969685
@@ -763,32 +756,6 @@ def Game.bird(+x: U32, +y: U32, +rx: U32, +oy: U32) -> Bool:
   ((x < rx) && (u < 12) : U32)
     && (Game.bar(u, y, 3, oy, 6, 3) || Game.bar(u, y, 4, (oy + 2 : U32), 4, 2))
 
-# Storm maths over the four cloud right edges. `span3` is the spread
-# (max - min) of three edges with U32-safe min/max. A storm brews when
-# at least one triple of the four edges clusters within STORM_SPAN.
-def STORM_SPAN() -> U32: 160
-
-def Game.min2(+a: U32, +b: U32) -> U32:
-  Game.pick((a < b : U32), a, b)
-
-def Game.max2(+a: U32, +b: U32) -> U32:
-  Game.pick((a < b : U32), b, a)
-
-def Game.min3(+a: U32, +b: U32, +c: U32) -> U32:
-  Game.min2(a, Game.min2(b, c))
-
-def Game.max3(+a: U32, +b: U32, +c: U32) -> U32:
-  Game.max2(a, Game.max2(b, c))
-
-def Game.span3(+a: U32, +b: U32, +c: U32) -> U32:
-  (Game.max3(a, b, c) - Game.min3(a, b, c) : U32)
-
-def Game.storm(+cx: U32, +dx: U32, +ex: U32, +fx: U32) -> Bool:
-  ((Game.span3(cx, dx, ex) <= STORM_SPAN())
-    || (Game.span3(cx, dx, fx) <= STORM_SPAN())
-    || (Game.span3(cx, ex, fx) <= STORM_SPAN())
-    || (Game.span3(dx, ex, fx) <= STORM_SPAN()) : U32)
-
 # Five named distinct pillar colors: green, orange-red, blue, magenta,
 # yellow.
 def COLOR_0() -> U32: 3189308
@@ -826,8 +793,7 @@ def PANEL_DARK() -> U32: 2109520
 # the tiny distant birds and the four cloud clusters (behind pipes),
 # the sun, the field patches,
 # the sea band (foam over water), the hills, the mountains, the
-# two-tone ground (grass over dirt), and the three sky bands (the
-# darker STORM trio whenever Game.storm holds). The
+# two-tone ground (grass over dirt), and the three sky bands. The
 # background is decorative: no hitboxes.
 def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
   Game{by, sp, dn, px, gy, pc, pt, scored, qx, qy, qc, qt, qscored, seed, mode, score, spd, space_held, r_held, cx, dx, ex, fx, wt} = g
@@ -852,10 +818,6 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
     Game.bar(x, y, (HUD_X() + 2 : U32), (HUD_Y() + 2 : U32), 68, 28), False{})
   +hud_frame = Game.pickb(hud_on,
     Game.bar(x, y, HUD_X(), HUD_Y(), HUD_W(), HUD_H()), False{})
-  +storm = Game.storm(cx, dx, ex, fx)
-  +sky_top = Game.pick(storm, STORM_TOP(), SKY_TOP())
-  +sky_mid = Game.pick(storm, STORM_MID(), SKY_MID())
-  +sky_pale = Game.pick(storm, STORM_PALE(), SKY_PALE())
   Game.pick(over_text, 16777215,
     Game.pick(over_digit, 16777215,
       Game.pick(over_exit, PANEL_RED(),
@@ -899,9 +861,9 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
                                 Game.pick(Game.mountains(x, y), MOUNT_TINT(),
                           Game.pick(Game.bar(x, y, 0, 496, 512, 8), GRASS_GREEN(),
                             Game.pick(Game.bar(x, y, 0, 504, 512, 8), DIRT_BROWN(),
-                              Game.pick(Game.bar(x, y, 0, 0, 512, 256), sky_top,
-                                Game.pick(Game.bar(x, y, 0, 256, 512, 128), sky_mid,
-                                  sky_pale))))))))))))))))))))))))))))
+                              Game.pick(Game.bar(x, y, 0, 0, 512, 256), SKY_TOP(),
+                                Game.pick(Game.bar(x, y, 0, 256, 512, 128), SKY_MID(),
+                                  SKY_PALE()))))))))))))))))))))))))))))
 
 # True when the whole [x0, y0, s] cell is one flat color. The
 # in-play HUD [220, 8, 72, 32] (2px frame, face, compact 3-digit
