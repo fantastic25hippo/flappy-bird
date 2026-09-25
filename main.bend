@@ -5,15 +5,15 @@
 # panels). A fresh Space launches the run with one flap; only a
 # fresh R restarts after death (Space never restarts). Collision uses
 # only the body inset by
-# HIT_PAD on each side. Sky bands, a sun, mountains, hills, a sea
+# HIT_PAD on each side. Sky bands, mountains, hills, a sea
 # band, and field patches are pure decoration over a two-tone ground
 # (grass over dirt) and never
 # collide. Four cloud clusters drift at parallax speeds and two tiny
 # distant birds slide across the upper third, all decorative.
 # Score draws as a framed 3-digit 7-segment HUD at top-center while
-# playing. Esc key-down or Close quits whatever the mode. Difficulty is
-# staged from score: scroll speeds 3/4 and, from 16 pillars, mid
-# then tight holes.
+# playing. Esc key-down or Close quits whatever the mode. Scroll speed
+# starts at 3 and ramps toward 8 by score 40 via wt dither. Difficulty
+# stages gap height from 16 pillars: mid then tight holes.
 #
 #   bend main.bend -o flappy && ./flappy
 
@@ -223,10 +223,18 @@ def Game.capw(+px: U32) -> U32:
 def Game.mix(+seed: U32) -> U32:
   ((seed * 1664525 : U32) + 1013904223 : U32)
 
-# Staged scroll speed from score: 3 before 16 pillars, 4
-# after.
-def Game.speed_of(+score: U32) -> U32:
-  Game.pick((score < 8 : U32), 3, Game.pick((score < 16 : U32), 3, 4))
+# Average scroll speed ramps from 3.0 at score 0 to 8.0 at score 40,
+# in 1/8 px steps, dithered across frames with wt. Integer spd is
+# floor(avg) most frames and floor(avg)+1 on some frames so the
+# long-run mean matches. Cap 8 so wrap stays off-screen.
+def Game.speed_of(+score: U32, +wt: U32) -> U32:
+  +add = Game.pick((40 < score : U32), 40, score)
+  +units = (24 + add : U32)
+  +base = U32.div(units, 8)
+  +frac = U32.mod(units, 8)
+  +phase = U32.mod(wt, 8)
+  +raw = (base + Game.pick((phase < frac : U32), 1, 0) : U32)
+  Game.pick((8 < raw : U32), 8, raw)
 
 # Gap height of a pair from its stored type alone (never score): type
 # 0 the normal hole, type 1 the mid hole, type 2 the tight hole.
@@ -260,7 +268,7 @@ def Game.remix_gy(+sib: U32, +nseed: U32, +score: U32, +gap: U32) -> U32:
   +hi = Game.pick((gcap < cand : U32), gcap, cand)
   Game.pick((hi < GAP_TOP_MIN() : U32), GAP_TOP_MIN(), hi)
 
-# Physics step while playing: gravity, travel, staged-speed scroll of
+# Physics step while playing: gravity, travel, dithered-speed scroll of
 # both pipe pairs, score, and the body inset hitbox test as four AABBs
 # per pair: top/bottom shaft in the shaft x band and top/bottom cap in
 # the wider cap x band, so the 8px overhang above the top cap or below
@@ -278,10 +286,11 @@ def Game.step(+g: Game) -> Game:
   +nsp = Game.pick(play, Game.fall(sp, dn), sp)
   +ndn = Game.pickb(play, Game.dir(sp, dn), dn)
   +ny = Game.pick(play, Game.travel(by, nsp, ndn), by)
-  +spx = Game.pick(play, (px - spd : U32), px)
-  +sqx = Game.pick(play, (qx - spd : U32), qx)
-  +awrap = (play && (px < spd) : U32)
-  +bwrap = (play && (qx < spd) : U32)
+  +cur_spd = Game.pick(play, Game.speed_of(score, wt), spd)
+  +spx = Game.pick(play, (px - cur_spd : U32), px)
+  +sqx = Game.pick(play, (qx - cur_spd : U32), qx)
+  +awrap = (play && (px < cur_spd) : U32)
+  +bwrap = (play && (qx < cur_spd) : U32)
   +npx = Game.pick(awrap, (sqx + PIPE_SPACING() : U32), spx)
   +nqx = Game.pick(bwrap, (spx + PIPE_SPACING() : U32), sqx)
   +wrap = (awrap || bwrap : U32)
@@ -334,7 +343,7 @@ def Game.step(+g: Game) -> Game:
   +nscore = Game.pick(pass_b, (s1 + 1 : U32), s1)
   +nscored = Game.pickb(awrap, False{}, Game.pickb(pass_a, True{}, scored))
   +nqscored = Game.pickb(bwrap, False{}, Game.pickb(pass_b, True{}, qscored))
-  +nspd = Game.pick(play, Game.speed_of(nscore), spd)
+  +nspd = Game.pick(play, Game.speed_of(nscore, wt), spd)
   +drift = (mode < 2 : U32)
   +ncx = Game.pick((drift && (cx < CLOUD_SPD_NEAR()) : U32), 600,
     Game.pick(drift, (cx - CLOUD_SPD_NEAR() : U32), cx))
@@ -658,10 +667,10 @@ def Game.hud_score(+x: U32, +y: U32, +score: U32) -> Bool:
     || Game.digit_c_at(Game.digit_mask(d0), 266, 13, x, y)
 
 # Background atmosphere (decorative only, never colliding): three sky
-# bands covering y 0..496, a static sun cluster around (420, 64),
-# mountains and hills sitting on the ground line behind the pipes, the
-# sea band y 480..496 with its lighter foam line y 480..484, and two
-# green field patches on the ground line. The ground is two-tone:
+# bands covering y 0..496, mountains and hills sitting on the ground
+# line behind the pipes, the sea band y 480..496 with its lighter foam
+# line y 480..484, and two green field patches on the ground line. The
+# ground is two-tone:
 # grass y 496..504 over dirt y 504..512, with floor death strictly at
 # y >= 496 (the sea never changes it).
 def SKY_TOP() -> U32: 4223160
@@ -680,17 +689,6 @@ def DIRT_BROWN() -> U32: 8937528
 def CLOUD_WHITE() -> U32: 16777215
 # Tiny distant bird silhouettes: a dark slate tint.
 def BIRD_TINT() -> U32: 4476004
-
-# Sun: a static cluster of filled 8px squares around (420, 64): a
-# yellow (COLOR_4) 2x2 core with four orange-red (COLOR_1) ray squares
-# (north, south, west, east). Decorative: no hitbox.
-def Game.sun_core(+x: U32, +y: U32) -> Bool:
-  Game.bar(x, y, 412, 56, 8, 8) || Game.bar(x, y, 420, 56, 8, 8)
-    || Game.bar(x, y, 412, 64, 8, 8) || Game.bar(x, y, 420, 64, 8, 8)
-
-def Game.sun_ray(+x: U32, +y: U32) -> Bool:
-  Game.bar(x, y, 416, 40, 8, 8) || Game.bar(x, y, 416, 80, 8, 8)
-    || Game.bar(x, y, 396, 60, 8, 8) || Game.bar(x, y, 436, 60, 8, 8)
 
 # Mountains: two taller stepped ranges (left and right) of static
 # quads whose bases sit on the ground line y 496, drawn in a darker
@@ -791,10 +789,9 @@ def PANEL_DARK() -> U32: 2109520
 # face, 3-digit score), each pipe pair
 # in its pillar color (shaft and caps alike; collision ignores color),
 # the tiny distant birds and the four cloud clusters (behind pipes),
-# the sun, the field patches,
-# the sea band (foam over water), the hills, the mountains, the
-# two-tone ground (grass over dirt), and the three sky bands. The
-# background is decorative: no hitboxes.
+# the field patches, the sea band (foam over water), the hills, the
+# mountains, the two-tone ground (grass over dirt), and the three sky
+# bands. The background is decorative: no hitboxes.
 def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
   Game{by, sp, dn, px, gy, pc, pt, scored, qx, qy, qc, qt, qscored, seed, mode, score, spd, space_held, r_held, cx, dx, ex, fx, wt} = g
   +ready = (mode < 1 : U32)
@@ -852,18 +849,16 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
                   Game.pick(Game.cloud(x, y, cx, 56) || Game.cloud(x, y, dx, 104)
                     || Game.cloud(x, y, ex, 16) || Game.cloud(x, y, fx, 152),
                     CLOUD_WHITE(),
-                    Game.pick(Game.sun_core(x, y), COLOR_4(),
-                      Game.pick(Game.sun_ray(x, y), COLOR_1(),
-                        Game.pick(Game.fields(x, y), FIELD_GREEN(),
-                          Game.pick(Game.foam(x, y), SEA_FOAM(),
-                            Game.pick(Game.sea(x, y), SEA_BLUE(),
-                              Game.pick(Game.hills(x, y), HILLS_TINT(),
-                                Game.pick(Game.mountains(x, y), MOUNT_TINT(),
-                          Game.pick(Game.bar(x, y, 0, 496, 512, 8), GRASS_GREEN(),
-                            Game.pick(Game.bar(x, y, 0, 504, 512, 8), DIRT_BROWN(),
-                              Game.pick(Game.bar(x, y, 0, 0, 512, 256), SKY_TOP(),
-                                Game.pick(Game.bar(x, y, 0, 256, 512, 128), SKY_MID(),
-                                  SKY_PALE()))))))))))))))))))))))))))))
+                    Game.pick(Game.fields(x, y), FIELD_GREEN(),
+                      Game.pick(Game.foam(x, y), SEA_FOAM(),
+                        Game.pick(Game.sea(x, y), SEA_BLUE(),
+                          Game.pick(Game.hills(x, y), HILLS_TINT(),
+                            Game.pick(Game.mountains(x, y), MOUNT_TINT(),
+                      Game.pick(Game.bar(x, y, 0, 496, 512, 8), GRASS_GREEN(),
+                        Game.pick(Game.bar(x, y, 0, 504, 512, 8), DIRT_BROWN(),
+                          Game.pick(Game.bar(x, y, 0, 0, 512, 256), SKY_TOP(),
+                            Game.pick(Game.bar(x, y, 0, 256, 512, 128), SKY_MID(),
+                              SKY_PALE()))))))))))))))))))))))))))
 
 # True when the whole [x0, y0, s] cell is one flat color. The
 # in-play HUD [220, 8, 72, 32] (2px frame, face, compact 3-digit
@@ -875,8 +870,7 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
 # [128, by, 32, 16] (body + beak + wing), the tiny distant birds
 # [right - 12, right] x [48, 52) and x [144, 148), the four cloud
 # clusters [right - CLOUD_W, right] x [16, 48), x [56, 88), x [104,
-# 136) and x [152, 184), the sun
-# [396, 40, 48, 48], the mountains [0, 384, 512, 112] (also bounding
+# 136) and x [152, 184), the mountains [0, 384, 512, 112] (also bounding
 # the sea band, its foam line, and the field patches under them),
 # the hills [0, 448, 512, 48], and the floor box [0, 496, 512, 16]
 # (two-tone ground) are single bounding boxes: cells completely
@@ -922,7 +916,6 @@ def Game.flat(d: Nat, +x0: U32, +y0: U32, +g: Game) -> Bool:
     && Game.outside(x0, y0, s, flx, 152, CLOUD_W(), 32)
     && Game.outside(x0, y0, s, bl0, 48, 12, 4)
     && Game.outside(x0, y0, s, bl1, 144, 12, 4)
-    && Game.outside(x0, y0, s, 396, 40, 48, 48)
     && Game.outside(x0, y0, s, 0, 384, 512, 112)
     && Game.outside(x0, y0, s, 0, 448, 512, 48)
     && Game.outside(x0, y0, s, 0, 496, 512, 16)

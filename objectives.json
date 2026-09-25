@@ -46,7 +46,7 @@
   "objectives": [
     {
       "id": "obj-1",
-      "title": "R-only dead restart + HUD white-slab fix (72x32 three-color HUD with compact 14x22 digits) + yellow sun (COLOR_4/COLOR_1)",
+      "title": "R-only dead restart + HUD white-slab fix (72x32 three-color HUD with compact 14x22 digits)",
       "tag": "critical",
       "status": "done",
       "repair_count": 0,

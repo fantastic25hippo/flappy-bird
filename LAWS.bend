@@ -18,7 +18,7 @@
 #     Ready and dead birds do not apply gravity, flap-as-motion, or pipe scroll.
 # L7: Exactly two pipe pairs of filled rectangles. Each pair has right-edge x, gap top, color index, type, and a pass latch.
 #     Pipe width PIPE_W = 40. Horizontal spacing PIPE_SPACING = 280 (init right-edges 552 and 832).
-#     While playing, each right-edge decreases by spd. When a pair leaves the left (edge < spd), it wraps to sibling + PIPE_SPACING,
+#     While playing, each right-edge decreases by spd. spd is a U32 whole-pixel step from Game.speed_of(score, wt): base 3, plus extra pixels dithered from score and wt so average speed ramps smoothly, capped at 8. Same spd is used for that frame's scroll and wrap test (edge < spd). When a pair leaves the left (edge < spd), it wraps to sibling + PIPE_SPACING,
 #     seed is stepped with Game.mix, and that pair's gap/type/color remix per L11–L12.
 #     Wrap must land off-screen (sibling at left edge plus 280 is >= 560).
 #     No IO.random_u32. No Hub PRNG. Ready and dead do not scroll or remix pipes.
@@ -39,11 +39,12 @@
 # L12: Difficulty is staged from score.
 #      Game.gap_of maps type 0 to GAP_H = 128, type 1 to GAP_H_MID = 112, type 2 to GAP_H_TIGHT = 96, and does not take score.
 #      Game.remix_ty returns 0 when score < 16, 1 when 16 <= score < 24, and (1 + (nseed AND 1)) when score >= 24.
-#      Stage 0 (score < 8): spd = 3, wrap remix of gy stays within 48 of the sibling gy then clamped to [GAP_TOP_MIN, GAP_TOP_MAX] with gy + gap <= 480, using U32-safe pick-clamp (no underflow when sibling_gy < 48).
-#      Stage 1 (8 <= score < 16): spd = 3, wrap remix of gy stays within 96 of the sibling gy with U32-safe pick-clamp (no underflow when sibling_gy < 96), then the same min/max/480 clamp.
-#      Stage 2 (16 <= score < 24): spd = 4, full mixer span for gy.
-#      Stage 3 (score >= 24): spd = 4, full span for gy with the chosen hole.
+#      Stage 0 (score < 8): wrap remix of gy stays within 48 of the sibling gy then clamped to [GAP_TOP_MIN, GAP_TOP_MAX] with gy + gap <= 480, using U32-safe pick-clamp (no underflow when sibling_gy < 48).
+#      Stage 1 (8 <= score < 16): wrap remix of gy stays within 96 of the sibling gy with U32-safe pick-clamp (no underflow when sibling_gy < 96), then the same min/max/480 clamp.
+#      Stage 2 (16 <= score < 24): full mixer span for gy.
+#      Stage 3 (score >= 24): full span for gy with the chosen hole.
+#      Scroll speed is independent of these gap stages; see L7 Game.speed_of.
 #      An on-screen pair keeps its stored type until wrap.
 #      GAP_TOP_MIN = 64, GAP_TOP_MAX = 304. No IO.random_u32.
-# L13: No PROOF.bend, no second window, no sprites/audio/pitch/rotation. Ground y=496..512 two-tone. Decorative required: sky bands (uniform fair SKY_TOP/SKY_MID/SKY_PALE bands), yellow sun (core COLOR_4, rays COLOR_1), mountains, sea band y=480..496 with foam 480..484, field patches, four cloud clusters, tiny distant birds. None collide. Floor death stays y >= 496 (sea is decorative). In-play compact 7-segment HUD allowed. Game-over 24x40 7-segment allowed.
-# L14: Four clouds cx,dx,ex,fx right edges, CLOUD_W=80, wrap to 600. cx/dx CLOUD_SPD_NEAR=2 wrap edge<2. ex/fx CLOUD_SPD_FAR=1 wrap edge<1. Drift ready+playing, freeze dead. wt advances ready+playing, frozen dead. Distant birds from wt. No storm detection, no rain, no storm sky palette. Collision ignores clouds, birds, sun, mountains, sea, fields.
+# L13: No PROOF.bend, no second window, no sprites/audio/pitch/rotation. Ground y=496..512 two-tone. Decorative required: sky bands (uniform fair SKY_TOP/SKY_MID/SKY_PALE bands), mountains, sea band y=480..496 with foam 480..484, field patches, four cloud clusters, tiny distant birds. None collide. Floor death stays y >= 496 (sea is decorative). In-play compact 7-segment HUD allowed. Game-over 24x40 7-segment allowed.
+# L14: Four clouds cx,dx,ex,fx right edges, CLOUD_W=80, wrap to 600. cx/dx CLOUD_SPD_NEAR=2 wrap edge<2. ex/fx CLOUD_SPD_FAR=1 wrap edge<1. Drift ready+playing, freeze dead. wt advances ready+playing, frozen dead. Distant birds from wt. No storm detection, no rain, no storm sky palette. Collision ignores clouds, birds, mountains, sea, fields.

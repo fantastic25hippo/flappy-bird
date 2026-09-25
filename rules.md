@@ -44,7 +44,7 @@ The game operates across three distinct modes: **Ready** (`mode = 0`), **Playing
   - **Ceiling Collision:** $y \le 0$ triggers death.
   - **Pipe Collision:** Collision with any active pipe shaft or cap marks the bird dead.
 - **Decorative Elements (Zero Collision):**
-  - Sky bands, sun, mountains, distant hills, sea ($y = 480..496$), foam line ($y = 480..484$), ground field patches, drifting clouds, and distant birds do **not** have hitboxes and never collide with the bird.
+  - Sky bands, mountains, distant hills, sea ($y = 480..496$), foam line ($y = 480..484$), ground field patches, drifting clouds, and distant birds do **not** have hitboxes and never collide with the bird.
 
 ---
 
@@ -74,16 +74,18 @@ The game operates across three distinct modes: **Ready** (`mode = 0`), **Playing
 
 ---
 
-## 5. Difficulty Staging (4 Stages)
+## 5. Difficulty Staging & Scroll Speed
 
-Difficulty dynamically scales with score across 4 stages:
+Scroll speed is independent of gap stages: it starts at 3.0 px/tick at score 0 and smoothly ramps toward 8.0 px/tick at score 40 in 1/8 px increments, dithered across frames using the weather tick `wt` (and capped at 8 px/tick).
 
-| Stage | Score Range | Scroll Speed (`spd`) | Gap Type | Gap Height (`GAP_H`) | Vertical Gap Variation |
-|:-----:|:-----------:|:--------------------:|:--------:|:--------------------:|:-----------------------|
-| **0** | $0 \le score < 8$ | 3 px/tick | Type 0 | 128 px | Stays within 48 px of sibling $gy$ |
-| **1** | $8 \le score < 16$ | 3 px/tick | Type 0 | 128 px | Stays within 96 px of sibling $gy$ |
-| **2** | $16 \le score < 24$ | 4 px/tick | Type 1 | 112 px | Full mixer range $[64, 304]$ |
-| **3** | $score \ge 24$ | 4 px/tick | Type 1 or 2 | 112 px or 96 px (`nseed & 1`) | Full mixer range $[64, 304]$ |
+Pipe gap difficulty dynamically scales with score across 4 stages:
+
+| Stage | Score Range | Gap Type | Gap Height (`GAP_H`) | Vertical Gap Variation |
+|:-----:|:-----------:|:--------:|:--------------------:|:-----------------------|
+| **0** | $0 \le score < 8$ | Type 0 | 128 px | Stays within 48 px of sibling $gy$ |
+| **1** | $8 \le score < 16$ | Type 0 | 128 px | Stays within 96 px of sibling $gy$ |
+| **2** | $16 \le score < 24$ | Type 1 | 112 px | Full mixer range $[64, 304]$ |
+| **3** | $score \ge 24$ | Type 1 or 2 | 112 px or 96 px (`nseed & 1`) | Full mixer range $[64, 304]$ |
 
 - Gap top $gy$ is strictly clamped to $[\text{GAP\_TOP\_MIN}=64, \text{GAP\_TOP\_MAX}=304]$, with $gy + gap \le 480$.
 
@@ -95,7 +97,7 @@ Difficulty dynamically scales with score across 4 stages:
   - Four clouds with right edges $cx, dx$ (near layer, speed 2 px/tick) and $ex, fx$ (far layer, speed 1 px/tick), width 80 px (`CLOUD_W`). Wrap to 600 when exiting left.
   - Initial positions: $cx = 120, dx = 220$ (100 px apart), $ex = 400, fx = 500$ (100 px apart).
   - Parallax speeds allow clouds to drift at two distinct rates.
-- **Sky & Sun:**
-  - Fair-weather sky bands (`SKY_TOP`, `SKY_MID`, `SKY_PALE`), sun (yellow core `COLOR_4`, orange-red rays `COLOR_1`).
+- **Sky:**
+  - Fair-weather sky bands (`SKY_TOP`, `SKY_MID`, `SKY_PALE`).
   - No storm detection, no rain, no storm sky palette.
 - **Native Color Packing:** All colors are packed in 32-bit `0x00RRGGBB` format matching native Linux X11 framebuffers.

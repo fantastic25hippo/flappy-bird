@@ -119,3 +119,22 @@ This document tracks the diagnosis, root causes, and resolutions for confirmed i
   - `AGENTS.md`, `rules.md`, `bugs.md`.
 - **Status:** **FIXED (removed / updated)**.
 
+---
+
+### Follow-up: Sun Removal & Dithered Scroll Speed Ramp (Fixed)
+
+- **Description:**
+  Aesthetic clean-up removing the static sun cluster from the decorative background, and replacing staged scroll speed (3/4) with a smooth, whole-pixel dithered speedup ramping from 3.0 at score 0 to 8.0 at score 40.
+- **Root Cause & Sites:**
+  - Sun rendering in `Game.sun_core`, `Game.sun_ray`, `Game.color`, and bounding box in `Game.flat`.
+  - Staged speed in `Game.speed_of(score)` and `Game.step`.
+- **Fix Applied:**
+  - Removed `Game.sun_core`, `Game.sun_ray`, sun color picking in `Game.color`, and sun bounding box in `Game.flat`.
+  - Replaced `Game.speed_of` with a whole-pixel dither function taking `score` and `wt`: average speed ramps in 1/8 px steps from 3.0 (score 0) to 8.0 (score 40), capped at 8.
+  - Computed frame scroll speed `cur_spd` dynamically in `Game.step` using `(score, wt)` for pipe motion and wrap check, storing `nspd` with `(nscore, wt)`.
+  - Re-froze `LAWS.bend` (L7, L12, L13, L14), updated `AGENTS.md`, `rules.md`, and objectives.
+- **Pointers:**
+  - `main.bend`: `Game.speed_of`, `Game.step`, `Game.color`, `Game.flat`.
+  - `LAWS.bend`, `AGENTS.md`, `rules.md`.
+- **Status:** **DONE**.
+
