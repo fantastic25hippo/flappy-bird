@@ -100,5 +100,5 @@ Difficulty dynamically scales with score across 4 stages:
   - Parallax speeds allow near and far clouds to converge dynamically into storm clusters.
 - **Weather Effects:**
   - **Fair Weather:** Bright sky palette, sun (yellow core `COLOR_4`, orange-red rays `COLOR_1`), no rain streaks, no rain quadtree bounding box.
-  - **Storm Weather:** Darkened storm sky palette, localized rain shower under the clustered triple ($x \in [\max(0, lo - 80), \min(512, hi)]$, $y \in [0, 480]$), animated via weather clock $wt$.
+  - **Storm Weather:** Darkened storm sky palette, localized rain shower under the clustered triple ($x \in [\max(0, lo - 80), \min(512, hi)]$, $y \in [0, 480]$) rendered as sparse 1px falling streaks (12px column period, 6px dashes) with a soft side fade in the outer 32px (24px column period, 3–4px dashes), animated via weather clock $wt$.
 - **Native Color Packing:** All colors are packed in 32-bit `0x00RRGGBB` format matching native Linux X11 framebuffers.

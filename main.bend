@@ -815,17 +815,24 @@ def Game.rain_hi(+cx: U32, +dx: U32, +ex: U32, +fx: U32) -> U32:
       Game.pick(c3, Game.max3(cx, ex, fx),
         Game.pick(c4, Game.max3(dx, ex, fx), 0))))
 
-# One localized rain shower in the x band [x0, x1] over y 0..480:
-# 1-2px wide streaks (a lone 1px lane and a 2px lane per 5px column
-# pattern), each lane a repeating vertical dash whose offset falls
-# with the wt clock (plus a mild slant), so the shower is frozen when
-# wt freezes. Purely decorative: no hitbox.
+# Localized rain shower in the x band [x0, x1] over y 0..480:
+# Sparse 1px streaks spaced 12px apart with short 6px dashes (out of 24
+# rows per cycle). A soft side fade in the outer 32px of each edge thins
+# streaks to 24px spacing and 3-4px dashes to prevent hard rectangular
+# borders. Streaks slant mildly via u / 4 and fall with the wt clock,
+# freezing when dead. Purely decorative: no hitbox.
 def Game.rain(+x: U32, +y: U32, +x0: U32, +x1: U32, +wt: U32) -> Bool:
   +u = Game.pick((x < x0 : U32), 0, (x - x0 : U32))
-  +lane = U32.mod(u, 5)
-  +streak = ((lane < 1) || ((1 < lane) && (lane < 4)) : U32)
+  +dist_r = Game.pick((x1 < x : U32), 0, (x1 - x : U32))
+  +edge_dist = Game.min2(u, dist_r)
+  +edge = (edge_dist < 32 : U32)
+  +outer = (edge_dist < 16 : U32)
+  +dash = Game.pick(outer, 3, Game.pick(edge, 4, 6))
+  +lane12 = U32.mod(u, 12)
+  +lane24 = U32.mod(u, 24)
+  +streak = Game.pickb(edge, (lane24 < 1 : U32), (lane12 < 1 : U32))
   +fall = U32.mod(((y + U32.mod((wt * 3 : U32), 24)) + U32.div(u, 4) : U32), 24)
-  ((x0 <= x) && (x < x1) && (y < 480) && streak && (fall < 16) : U32)
+  ((x0 <= x : U32) && (x < x1 : U32) && (y < 480 : U32) && streak && (fall < dash : U32))
 
 # Five named distinct pillar colors: green, orange-red, blue, magenta,
 # yellow.

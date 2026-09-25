@@ -1,6 +1,6 @@
 # Confirmed Bugs & Resolution Log
 
-This document tracks the diagnosis, root causes, and resolutions for three confirmed issues in `./main.bend`. All three bugs have been resolved, verified against `LAWS.bend` (L6–L14), and validated via `bend main.bend --check-only` and `bend main.bend -o flappy`.
+This document tracks the diagnosis, root causes, and resolutions for four confirmed issues in `./main.bend`. All four bugs have been resolved, verified against `LAWS.bend` (L6–L14), and validated via `bend main.bend --check-only` and `bend main.bend -o flappy`.
 
 ---
 
@@ -55,3 +55,25 @@ This document tracks the diagnosis, root causes, and resolutions for three confi
 - **Pointers:**
   - `main.bend`: `Game.init` and doc comment.
 - **Status:** **FIXED**.
+
+---
+
+### Bug 4: Rain Resembles a Solid Wall (Fixed)
+
+- **Description:**
+  When a storm triggered, the localized rain shower rendered as a dense, solid wall of pixels rather than sparse falling streaks. This obscured clouds and background elements because rain renders in front of clouds starting at $y = 0$.
+- **Root Cause & Sites:**
+  - `Game.rain` (~lines 823–828):
+    1. **Excessive density:** 3 out of every 5 columns were designated as rain lanes (`lane < 1` and `1 < lane && lane < 4`), and each lane was lit for 16 out of every 24 rows (`fall < 16`), filling ~40% of all pixels in the shower band.
+    2. **Hard rectangular edges:** Flat cutoff at the horizontal boundaries (`x0 <= x && x < x1`) with no edge tapering or thinning towards the sides.
+    3. **Full vertical span ($y = 0..480$):** Starting at $y = 0$ in front of clouds (`Game.color` evaluates rain before clouds, as required by L14/AGENTS.md). Because the rain was excessively dense, clouds were obscured rather than showing through.
+- **Fix Applied:**
+  - Kept rain and thinned it under existing L13/L14 rules without changing the $y \in [0, 480]$ range or the draw order in front of clouds:
+    - Thinned interior streaks to 1px wide lanes spaced 12px apart (`U32.mod(u, 12) < 1`).
+    - Shortened dash length from 16/24 rows to 6/24 rows (`fall < 6`), letting sky, clouds, and landscape show through clearly.
+    - Added a soft 2-tier side fade in the outer 32px of each edge: widened streak period to 24px (`U32.mod(u, 24) < 1`) and shortened dashes to 3–4px (`edge_dist < 16 -> 3`, `edge_dist < 32 -> 4`) to eliminate hard rectangular borders.
+    - Preserved the mild slant `U32.div(u, 4)` and $wt$-driven fall/freezing.
+- **Pointers:**
+  - `main.bend`: `Game.rain` (lines ~822–836).
+- **Status:** **FIXED**.
+
