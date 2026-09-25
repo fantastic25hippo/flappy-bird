@@ -1,0 +1,11 @@
+# Native ELF binary
+flappy
+
+# Sitting logs and archives
+sittings/
+
+# Editor and OS junk
+.DS_Store
+*~
+*.swp
+*.swo
