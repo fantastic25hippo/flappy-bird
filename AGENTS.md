@@ -1,7 +1,7 @@
 # Instructions for Pi (Workhorse Coder)
 
-You are the workhorse coder in the Grok -> Gemini -> Pi Bend development workflow.
-You are the sole author of `main.bend` in this directory (`./main.bend`).
+You are the workhorse coder in the Grok -> Gemini -> Pi long-session Bend development harness.
+You are the author of `main.bend` in this directory (`./main.bend`) for this harness sitting.
 
 ## Scope & Target Shape
 - Target file: `./main.bend` only (in this directory). Target path is always `./main.bend` (cwd is already this project directory). Never write `projects/flappy-bird/main.bend`.
@@ -39,7 +39,7 @@ You are the sole author of `main.bend` in this directory (`./main.bend`).
    - Mountains: taller static peaks sitting on the ground line, at least two ranges (left and right), stepped quads, darker tint than `HILLS_TINT`. One `Game.flat` box for mountains.
    - Sea: named blue water band `y = 480..496`, full width 512, with lighter foam/shore line `y = 480..484`. Sea is purely decorative. Floor collision strictly remains at `y >= 496` (sea must NOT change floor death).
    - Fields: two named green patches on the ground line in front of mountains and behind pipes (left and right, not covering full 512). Decorative only.
-   - Draw order (front to back in `Game.color`): dead UI > bird > ready UI > in-play HUD > pipes > rain > distant birds > clouds > sun > fields > sea > mountains/hills > ground > sky.
+   - Draw order (front to back in `Game.color`): dead UI > bird > ready UI > in-play HUD > pipes > distant birds > clouds > sun > fields > sea > mountains/hills > ground > sky.
 
 5. **Four parallax clouds + tiny distant birds:**
    - Four cloud clusters with state fields `cx, dx, ex, fx` as right edges, `CLOUD_W = 80`, wrap to 600.
@@ -50,17 +50,14 @@ You are the sole author of `main.bend` in this directory (`./main.bend`).
    - Drift in ready and playing, freeze in dead. Four `Game.flat` boxes. Zero collision.
    - Tiny distant birds: two small silhouettes (e.g. body 6x3 plus wing 4x2), drawn in upper third, slower than near clouds. Right edges derived from `wt` via `Game.birdx(wt, 0)` and `Game.birdx(wt, 1)`, width 12, wrap to 600. Zero collision. One `Game.flat` box per bird. Frozen in dead.
 
-6. **Storm & localized rain shower:**
+6. **Storm darkening:**
    - `Game.span3(a, b, c) -> U32`: `max(a, b, c) - min(a, b, c)` with U32-safe min/max.
    - `Game.storm(+cx, +dx, +ex, +fx) -> Bool`: true when at least one triple of the four cloud right edges has `span3 <= 160`.
    - When storm is true (ready or playing):
      - Sky bands switch to darker named storm colors (full-width uniform rectangles, quadtree-flat).
-     - Rain is a localized shower falling under that clustered triple: x-range `[lo - CLOUD_W, hi]` where `lo`/`hi` are min/max right edges of that triple. Use U32 pick-clamp for lower bound: `Game.pick((lo < CLOUD_W : U32), 0, (lo - CLOUD_W : U32))` and clip `hi` to 512. Rain y-range is `0..480`. Streaks 1-2px wide derived from `x, y, wt`.
-     - One `Game.flat` box around the rain shower, gated on storm (preserves 60 FPS quadtree culling).
-     - Rain draws behind pipes and bird, in front of clouds/landscape. Zero collision. Frozen in dead (`wt` frozen).
-   - When storm is false: fair-weather sky bands, no rain, no rain box in `Game.flat`.
+   - When storm is false: fair-weather sky bands.
    - `wt: U32` increments by 1 each tick while ready or playing (`wt + 1`). Dead does not increment `wt`. Init `wt = 0`.
-   - Rain and darkening never change `spd`, flap, gravity, pipe motion, or hitboxes.
+   - Storm darkening never changes `spd`, flap, gravity, pipe motion, or hitboxes.
 
 7. **Smaller colorful UI:**
    - In-play HUD: 72x32 at (220, 8) with compact 14x22 digits.
@@ -91,7 +88,7 @@ You are the sole author of `main.bend` in this directory (`./main.bend`).
 - Do not add audio, networking, file I/O, sprites, rotation/pitch, or sine hover.
 - Do not retune `GRAVITY = 1`, `FLAP = 8`, or `MAX_FALL = 12`.
 - Do not add a third pipe pair (keep `PIPE_SPACING = 280`, exactly two pairs).
-- Do not add hitboxes to any decorative elements (sun, mountains, sea, fields, clouds, birds, rain).
+- Do not add hitboxes to any decorative elements (sun, mountains, sea, fields, clouds, birds).
 - Do not change floor death `y >= 496`.
 - Do not create or edit any `.c`, Raylib, SDL2, or Makefile files.
 - Do not launch `./flappy`.
@@ -110,5 +107,5 @@ Follow all candidate laws encoded in `LAWS.bend`:
 - L10: Score unchanged (latches). Playing HUD 72x32 at (220, 8) with compact 14x22 3-digit cells of score % 1000, NOT a solid white 96x48 slab. Digits, frame, face three distinct colors. Game.flat HUD box gated mode == 1. Digits in view.
 - L11: Five named distinct RGB pillar colors. Each pair stores an index 0..4. Init indices 0 and 1. On wrap, that pair advances through the five-color set so successive pillars differ. Draw uses the pair's color (shaft and cap).
 - L12: Difficulty is staged from score. Game.gap_of maps type 0 to GAP_H = 128, type 1 to GAP_H_MID = 112, type 2 to GAP_H_TIGHT = 96, and does not take score. Game.remix_ty returns 0 when score < 16, 1 when 16 <= score < 24, and (1 + (nseed AND 1)) when score >= 24. Stage 0 (score < 8): spd = 2, wrap remix of gy stays within 48 of the sibling gy then clamped to [GAP_TOP_MIN, GAP_TOP_MAX] with gy + gap <= 480, using U32-safe pick-clamp (no underflow when sibling_gy < 48). Stage 1 (8 <= score < 16): spd = 3, wrap remix of gy stays within 96 of the sibling gy with U32-safe pick-clamp (no underflow when sibling_gy < 96), then the same min/max/480 clamp. Stage 2 (16 <= score < 24): spd = 4, full mixer span for gy. Stage 3 (score >= 24): spd = 4, full span for gy with the chosen hole. An on-screen pair keeps its stored type until wrap. GAP_TOP_MIN = 64, GAP_TOP_MAX = 304. No IO.random_u32.
-- L13: No PROOF.bend, no second window, no sprites/audio/pitch/rotation. Ground y=496..512 two-tone. Decorative required: sky bands (fair and darker storm palettes, uniform bands), yellow sun (core COLOR_4, rays COLOR_1), mountains, sea band y=480..496 with foam 480..484, field patches, four cloud clusters, tiny distant birds, storm darkening + localized rain when Game.storm true. None collide. Floor death stays y >= 496 (sea is decorative). In-play compact 7-segment HUD allowed. Game-over 24x40 7-segment allowed.
-- L14: Four clouds cx,dx,ex,fx right edges, CLOUD_W=80, wrap to 600. cx/dx CLOUD_SPD_NEAR=2 wrap edge<2. ex/fx CLOUD_SPD_FAR=1 wrap edge<1. Drift ready+playing, freeze dead. wt advances ready+playing, frozen dead. Distant birds from wt. Storm from a triple of right-edges with span3 <= 160. Rain shower box that triple's [min-CLOUD_W, max] x 0..480 with U32 pick-clamp Game.pick(lo < CLOUD_W, 0, lo-CLOUD_W) and hi clipped to 512, gated on storm. Collision ignores clouds, birds, rain, sun, mountains, sea, fields.
+- L13: No PROOF.bend, no second window, no sprites/audio/pitch/rotation. Ground y=496..512 two-tone. Decorative required: sky bands (fair and darker storm palettes, uniform bands), yellow sun (core COLOR_4, rays COLOR_1), mountains, sea band y=480..496 with foam 480..484, field patches, four cloud clusters, tiny distant birds, storm darkening when Game.storm true. None collide. Floor death stays y >= 496 (sea is decorative). In-play compact 7-segment HUD allowed. Game-over 24x40 7-segment allowed.
+- L14: Four clouds cx,dx,ex,fx right edges, CLOUD_W=80, wrap to 600. cx/dx CLOUD_SPD_NEAR=2 wrap edge<2. ex/fx CLOUD_SPD_FAR=1 wrap edge<1. Drift ready+playing, freeze dead. wt advances ready+playing, frozen dead. Distant birds from wt. Storm from a triple of right-edges with span3 <= 160; when storm is true the sky bands use the darker storm palette. No rain. Collision ignores clouds, birds, sun, mountains, sea, fields.

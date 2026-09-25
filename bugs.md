@@ -1,6 +1,6 @@
 # Confirmed Bugs & Resolution Log
 
-This document tracks the diagnosis, root causes, and resolutions for four confirmed issues in `./main.bend`. All four bugs have been resolved, verified against `LAWS.bend` (L6–L14), and validated via `bend main.bend --check-only` and `bend main.bend -o flappy`.
+This document tracks the diagnosis, root causes, and resolutions for confirmed issues in `./main.bend`. All bugs have been resolved, verified against `LAWS.bend` (L6–L14), and validated via `bend main.bend --check-only` and `bend main.bend -o flappy`.
 
 ---
 
@@ -76,4 +76,24 @@ This document tracks the diagnosis, root causes, and resolutions for four confir
 - **Pointers:**
   - `main.bend`: `Game.rain` (lines ~822–836).
 - **Status:** **FIXED**.
+
+---
+
+### Bug 5: Rain Artifacts & Aesthetic Cut (Fixed - Removed)
+
+- **Description:**
+  After playtesting commit `e56591b` (sparse rain), the rain still exhibited an unnatural hard left edge (~x 290) and still ran from $y = 0$ through the upper sky. Sahil authorized cutting rain entirely while keeping dynamic storm sky darkening.
+- **Root Cause & Sites:**
+  - Rain rendering logic in `Game.rain`, `Game.rain_lo`, `Game.rain_hi`, and `RAIN_TINT`.
+  - Rain layer in `Game.color` rendered between pipes and distant birds.
+  - Dynamic rain shower bounding box in `Game.flat` gated on `Game.storm`.
+- **Fix Applied:**
+  - Removed localized rain shower completely: removed `Game.rain`, `Game.rain_lo`, `Game.rain_hi`, `RAIN_TINT`, the rain layer in `Game.color`, and the rain box in `Game.flat`.
+  - Preserved `Game.storm` detection, cloud parallax clustering, and darker storm sky palettes (`STORM_TOP`, `STORM_MID`, `STORM_PALE`).
+  - Re-froze invariant laws `LAWS.bend` (L13, L14) and updated `AGENTS.md` item 6 and project documentation to reflect rain removal with storm darkening preserved.
+- **Pointers:**
+  - `main.bend`: removed `Game.rain` / `rain_lo` / `rain_hi` / `RAIN_TINT` / rain layer in `Game.color` / rain box in `Game.flat`.
+  - `LAWS.bend`: L13, L14 re-frozen without rain.
+  - `AGENTS.md`: items 4, 6, prohibitions, and laws updated.
+- **Status:** **FIXED (removed)**.
 

@@ -10,7 +10,7 @@
 # (grass over dirt) and never
 # collide. Four cloud clusters drift at parallax speeds and two tiny
 # distant birds slide across the upper third. Clustered clouds brew a
-# storm: darker sky bands and a localized rain shower, all decorative.
+# storm: darker sky bands, all decorative.
 # Score draws as a framed 3-digit 7-segment HUD at top-center while
 # playing. Esc key-down or Close quits whatever the mode. Difficulty is
 # staged from score: scroll speeds 2/3/4 and, from 16 pillars, mid
@@ -660,13 +660,12 @@ def Game.hud_score(+x: U32, +y: U32, +score: U32) -> Bool:
 
 # Background atmosphere (decorative only, never colliding): three sky
 # bands covering y 0..496 (a fair trio, or the darker STORM trio when
-# Game.storm holds), a localized rain shower under the clustered
-# clouds, a static sun cluster around (420, 64),
+# Game.storm holds), a static sun cluster around (420, 64),
 # mountains and hills sitting on the ground line behind the pipes, the
 # sea band y 480..496 with its lighter foam line y 480..484, and two
 # green field patches on the ground line. The ground is two-tone:
 # grass y 496..504 over dirt y 504..512, with floor death strictly at
-# y >= 496 (the sea and the rain never change it).
+# y >= 496 (the sea never changes it).
 def SKY_TOP() -> U32: 4223160
 def SKY_MID() -> U32: 6856920
 def SKY_PALE() -> U32: 11589872
@@ -688,8 +687,6 @@ def DIRT_BROWN() -> U32: 8937528
 def CLOUD_WHITE() -> U32: 16777215
 # Tiny distant bird silhouettes: a dark slate tint.
 def BIRD_TINT() -> U32: 4476004
-# Rain shower streaks: a pale tint distinct from the storm sky bands.
-def RAIN_TINT() -> U32: 11060456
 
 # Sun: a static cluster of filled 8px squares around (420, 64): a
 # yellow (COLOR_4) 2x2 core with four orange-red (COLOR_1) ray squares
@@ -768,10 +765,7 @@ def Game.bird(+x: U32, +y: U32, +rx: U32, +oy: U32) -> Bool:
 
 # Storm maths over the four cloud right edges. `span3` is the spread
 # (max - min) of three edges with U32-safe min/max. A storm brews when
-# at least one triple of the four edges clusters within STORM_SPAN;
-# the shower then falls under that clustered triple: `rain_lo` /
-# `rain_hi` are the triple's min / max right edges (the first
-# clustered triple in a fixed order, the last triple otherwise).
+# at least one triple of the four edges clusters within STORM_SPAN.
 def STORM_SPAN() -> U32: 160
 
 def Game.min2(+a: U32, +b: U32) -> U32:
@@ -794,45 +788,6 @@ def Game.storm(+cx: U32, +dx: U32, +ex: U32, +fx: U32) -> Bool:
     || (Game.span3(cx, dx, fx) <= STORM_SPAN())
     || (Game.span3(cx, ex, fx) <= STORM_SPAN())
     || (Game.span3(dx, ex, fx) <= STORM_SPAN()) : U32)
-
-def Game.rain_lo(+cx: U32, +dx: U32, +ex: U32, +fx: U32) -> U32:
-  +c1 = (Game.span3(cx, dx, ex) <= STORM_SPAN() : U32)
-  +c2 = (Game.span3(cx, dx, fx) <= STORM_SPAN() : U32)
-  +c3 = (Game.span3(cx, ex, fx) <= STORM_SPAN() : U32)
-  +c4 = (Game.span3(dx, ex, fx) <= STORM_SPAN() : U32)
-  Game.pick(c1, Game.min3(cx, dx, ex),
-    Game.pick(c2, Game.min3(cx, dx, fx),
-      Game.pick(c3, Game.min3(cx, ex, fx),
-        Game.pick(c4, Game.min3(dx, ex, fx), 0))))
-
-def Game.rain_hi(+cx: U32, +dx: U32, +ex: U32, +fx: U32) -> U32:
-  +c1 = (Game.span3(cx, dx, ex) <= STORM_SPAN() : U32)
-  +c2 = (Game.span3(cx, dx, fx) <= STORM_SPAN() : U32)
-  +c3 = (Game.span3(cx, ex, fx) <= STORM_SPAN() : U32)
-  +c4 = (Game.span3(dx, ex, fx) <= STORM_SPAN() : U32)
-  Game.pick(c1, Game.max3(cx, dx, ex),
-    Game.pick(c2, Game.max3(cx, dx, fx),
-      Game.pick(c3, Game.max3(cx, ex, fx),
-        Game.pick(c4, Game.max3(dx, ex, fx), 0))))
-
-# Localized rain shower in the x band [x0, x1] over y 0..480:
-# Sparse 1px streaks spaced 12px apart with short 6px dashes (out of 24
-# rows per cycle). A soft side fade in the outer 32px of each edge thins
-# streaks to 24px spacing and 3-4px dashes to prevent hard rectangular
-# borders. Streaks slant mildly via u / 4 and fall with the wt clock,
-# freezing when dead. Purely decorative: no hitbox.
-def Game.rain(+x: U32, +y: U32, +x0: U32, +x1: U32, +wt: U32) -> Bool:
-  +u = Game.pick((x < x0 : U32), 0, (x - x0 : U32))
-  +dist_r = Game.pick((x1 < x : U32), 0, (x1 - x : U32))
-  +edge_dist = Game.min2(u, dist_r)
-  +edge = (edge_dist < 32 : U32)
-  +outer = (edge_dist < 16 : U32)
-  +dash = Game.pick(outer, 3, Game.pick(edge, 4, 6))
-  +lane12 = U32.mod(u, 12)
-  +lane24 = U32.mod(u, 24)
-  +streak = Game.pickb(edge, (lane24 < 1 : U32), (lane12 < 1 : U32))
-  +fall = U32.mod(((y + U32.mod((wt * 3 : U32), 24)) + U32.div(u, 4) : U32), 24)
-  ((x0 <= x : U32) && (x < x1 : U32) && (y < 480 : U32) && streak && (fall < dash : U32))
 
 # Five named distinct pillar colors: green, orange-red, blue, magenta,
 # yellow.
@@ -868,8 +823,7 @@ def PANEL_DARK() -> U32: 2109520
 # (title, SPACE text over the start bar), the in-play HUD (frame,
 # face, 3-digit score), each pipe pair
 # in its pillar color (shaft and caps alike; collision ignores color),
-# the localized rain shower, the tiny distant birds and the four
-# cloud clusters (behind pipes),
+# the tiny distant birds and the four cloud clusters (behind pipes),
 # the sun, the field patches,
 # the sea band (foam over water), the hills, the mountains, the
 # two-tone ground (grass over dirt), and the three sky bands (the
@@ -902,10 +856,6 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
   +sky_top = Game.pick(storm, STORM_TOP(), SKY_TOP())
   +sky_mid = Game.pick(storm, STORM_MID(), SKY_MID())
   +sky_pale = Game.pick(storm, STORM_PALE(), SKY_PALE())
-  +rlo = Game.rain_lo(cx, dx, ex, fx)
-  +rhi = Game.rain_hi(cx, dx, ex, fx)
-  +rx0 = Game.pick((rlo < CLOUD_W() : U32), 0, (rlo - CLOUD_W() : U32))
-  +rx1 = Game.pick((512 < rhi : U32), 512, rhi)
   Game.pick(over_text, 16777215,
     Game.pick(over_digit, 16777215,
       Game.pick(over_exit, PANEL_RED(),
@@ -935,7 +885,6 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
                   || Game.inside(x, y, 1, Game.capx(qx), (qy + gb : U32),
                     Game.capw(qx), PIPE_CAP_H()),
                   Game.pillar_color(qc),
-                  Game.pick((storm && Game.rain(x, y, rx0, rx1, wt) : U32), RAIN_TINT(),
                   Game.pick(Game.bird(x, y, Game.birdx(wt, 0), 48)
                     || Game.bird(x, y, Game.birdx(wt, 1), 144), BIRD_TINT(),
                   Game.pick(Game.cloud(x, y, cx, 56) || Game.cloud(x, y, dx, 104)
@@ -952,7 +901,7 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
                             Game.pick(Game.bar(x, y, 0, 504, 512, 8), DIRT_BROWN(),
                               Game.pick(Game.bar(x, y, 0, 0, 512, 256), sky_top,
                                 Game.pick(Game.bar(x, y, 0, 256, 512, 128), sky_mid,
-                                  sky_pale)))))))))))))))))))))))))))))
+                                  sky_pale))))))))))))))))))))))))))))
 
 # True when the whole [x0, y0, s] cell is one flat color. The
 # in-play HUD [220, 8, 72, 32] (2px frame, face, compact 3-digit
@@ -961,9 +910,7 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
 # plus the 200x56 SPACE start panel), the dead UI [124, 56, 265, 338]
 # (GAME OVER banner, score digits, RETRY / EXIT panels with their
 # R / Esc hints), the whole bird
-# [128, by, 32, 16] (body + beak + wing), the rain shower
-# [rx0, 0, rw, 480] (only when Game.storm holds), the tiny
-# distant birds
+# [128, by, 32, 16] (body + beak + wing), the tiny distant birds
 # [right - 12, right] x [48, 52) and x [144, 148), the four cloud
 # clusters [right - CLOUD_W, right] x [16, 48), x [56, 88), x [104,
 # 136) and x [152, 184), the sun
@@ -1000,12 +947,6 @@ def Game.flat(d: Nat, +x0: U32, +y0: U32, +g: Game) -> Bool:
     (Game.birdx(wt, 0) - 12 : U32))
   +bl1 = Game.pick((Game.birdx(wt, 1) < 12 : U32), 0,
     (Game.birdx(wt, 1) - 12 : U32))
-  +storm = Game.storm(cx, dx, ex, fx)
-  +rlo = Game.rain_lo(cx, dx, ex, fx)
-  +rhi = Game.rain_hi(cx, dx, ex, fx)
-  +rx0 = Game.pick((rlo < CLOUD_W() : U32), 0, (rlo - CLOUD_W() : U32))
-  +rx1 = Game.pick((512 < rhi : U32), 512, rhi)
-  +rw = Game.pick((rx1 < rx0 : U32), 0, (rx1 - rx0 : U32))
   +ready = (mode < 1 : U32)
   +dead = U32.is_eq(mode, 2)
   +hud = U32.is_eq(mode, 1)
@@ -1019,7 +960,6 @@ def Game.flat(d: Nat, +x0: U32, +y0: U32, +g: Game) -> Bool:
     && Game.outside(x0, y0, s, flx, 152, CLOUD_W(), 32)
     && Game.outside(x0, y0, s, bl0, 48, 12, 4)
     && Game.outside(x0, y0, s, bl1, 144, 12, 4)
-    && Game.pickb(storm, Game.outside(x0, y0, s, rx0, 0, rw, 480), True{})
     && Game.outside(x0, y0, s, 396, 40, 48, 48)
     && Game.outside(x0, y0, s, 0, 384, 512, 112)
     && Game.outside(x0, y0, s, 0, 448, 512, 48)

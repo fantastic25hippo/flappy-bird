@@ -2,7 +2,7 @@
 
 A Flappy Bird clone written in pure [Bend](https://bend-lang.com) (not the official Flappy Bird).
 
-Built using Bend's 2D windowed application framework (`App.run`), custom software quadtree rasterization (`Image` / `Pix` / `Qua`), dynamic difficulty staging, procedural cloud parallax, and localized storm weather effects.
+Built using Bend's 2D windowed application framework (`App.run`), custom software quadtree rasterization (`Image` / `Pix` / `Qua`), dynamic difficulty staging, and procedural cloud parallax.
 
 ## Prerequisites
 

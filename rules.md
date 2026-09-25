@@ -44,7 +44,7 @@ The game operates across three distinct modes: **Ready** (`mode = 0`), **Playing
   - **Ceiling Collision:** $y \le 0$ triggers death.
   - **Pipe Collision:** Collision with any active pipe shaft or cap marks the bird dead.
 - **Decorative Elements (Zero Collision):**
-  - Sky bands, sun, mountains, distant hills, sea ($y = 480..496$), foam line ($y = 480..484$), ground field patches, drifting clouds, distant birds, and rain shower streaks do **not** have hitboxes and never collide with the bird.
+  - Sky bands, sun, mountains, distant hills, sea ($y = 480..496$), foam line ($y = 480..484$), ground field patches, drifting clouds, and distant birds do **not** have hitboxes and never collide with the bird.
 
 ---
 
@@ -99,6 +99,6 @@ Difficulty dynamically scales with score across 4 stages:
   - Fair weather at $t = 0$ ($span > 160$ across all triples).
   - Parallax speeds allow near and far clouds to converge dynamically into storm clusters.
 - **Weather Effects:**
-  - **Fair Weather:** Bright sky palette, sun (yellow core `COLOR_4`, orange-red rays `COLOR_1`), no rain streaks, no rain quadtree bounding box.
-  - **Storm Weather:** Darkened storm sky palette, localized rain shower under the clustered triple ($x \in [\max(0, lo - 80), \min(512, hi)]$, $y \in [0, 480]$) rendered as sparse 1px falling streaks (12px column period, 6px dashes) with a soft side fade in the outer 32px (24px column period, 3–4px dashes), animated via weather clock $wt$.
+  - **Fair Weather:** Bright sky palette, sun (yellow core `COLOR_4`, orange-red rays `COLOR_1`).
+  - **Storm Weather:** Darkened storm sky palette when `Game.storm` triggers (rain was cut; storm darkening kept).
 - **Native Color Packing:** All colors are packed in 32-bit `0x00RRGGBB` format matching native Linux X11 framebuffers.
