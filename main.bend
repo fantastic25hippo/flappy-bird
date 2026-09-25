@@ -89,10 +89,10 @@ def CLOUD_W() -> U32: 80
 type Game is Data:
   Game{by: U32, sp: U32, dn: Bool, px: U32, gy: U32, pc: U32, pt: U32, scored: Bool, qx: U32, qy: U32, qc: U32, qt: U32, qscored: Bool, seed: U32, mode: U32, score: U32, spd: U32, space_held: Bool, r_held: Bool, cx: U32, dx: U32, ex: U32, fx: U32, wt: U32}
 
-# Init starts all four clouds on-screen and spaced (cx 160, dx 400,
-# ex 280, fx 520) with the weather clock wt = 0.
+# Init starts all four clouds on-screen and spaced (cx 120, dx 220,
+# ex 400, fx 500) with the weather clock wt = 0.
 def Game.init() -> Game:
-  Game{256, 0, True{}, 552, 160, 0, 0, False{}, 832, 224, 1, 0, False{}, 123456789, 0, 0, 2, False{}, False{}, 160, 400, 280, 520, 0}
+  Game{256, 0, True{}, 552, 160, 0, 0, False{}, 832, 224, 1, 0, False{}, 123456789, 0, 0, 2, False{}, False{}, 120, 220, 400, 500, 0}
 
 # Dead restart restores Game.init(), but keeps the live key states so
 # a held Space can never instantly flap after the R restart.
@@ -667,29 +667,29 @@ def Game.hud_score(+x: U32, +y: U32, +score: U32) -> Bool:
 # green field patches on the ground line. The ground is two-tone:
 # grass y 496..504 over dirt y 504..512, with floor death strictly at
 # y >= 496 (the sea and the rain never change it).
-def SKY_TOP() -> U32: 1081129215
-def SKY_MID() -> U32: 1755371775
-def SKY_PALE() -> U32: 2967007487
+def SKY_TOP() -> U32: 4223160
+def SKY_MID() -> U32: 6856920
+def SKY_PALE() -> U32: 11589872
 # Darker storm sky palettes: the same three full-width uniform bands
 # (still quadtree-flat), used whenever Game.storm holds.
-def STORM_TOP() -> U32: 574251263
-def STORM_MID() -> U32: 877689087
-def STORM_PALE() -> U32: 1214679295
-def HILLS_TINT() -> U32: 1216379135
+def STORM_TOP() -> U32: 2243168
+def STORM_MID() -> U32: 3428472
+def STORM_PALE() -> U32: 4744840
+def HILLS_TINT() -> U32: 4751480
 # Mountains: darker than HILLS_TINT.
-def MOUNT_TINT() -> U32: 760239615
+def MOUNT_TINT() -> U32: 2969685
 # Sea band y 480..496 and its lighter foam / shore line y 480..484.
-def SEA_BLUE() -> U32: 813222143
-def SEA_FOAM() -> U32: 2530798591
+def SEA_BLUE() -> U32: 3176648
+def SEA_FOAM() -> U32: 9885931
 # Green field patches on the ground line.
-def FIELD_GREEN() -> U32: 2025741055
-def GRASS_GREEN() -> U32: 1218986239
-def DIRT_BROWN() -> U32: 2288007423
-def CLOUD_WHITE() -> U32: 4294967295
+def FIELD_GREEN() -> U32: 7913050
+def GRASS_GREEN() -> U32: 4761664
+def DIRT_BROWN() -> U32: 8937528
+def CLOUD_WHITE() -> U32: 16777215
 # Tiny distant bird silhouettes: a dark slate tint.
-def BIRD_TINT() -> U32: 1145857279
+def BIRD_TINT() -> U32: 4476004
 # Rain shower streaks: a pale tint distinct from the storm sky bands.
-def RAIN_TINT() -> U32: 2831476991
+def RAIN_TINT() -> U32: 11060456
 
 # Sun: a static cluster of filled 8px squares around (420, 64): a
 # yellow (COLOR_4) 2x2 core with four orange-red (COLOR_1) ray squares
@@ -799,17 +799,21 @@ def Game.rain_lo(+cx: U32, +dx: U32, +ex: U32, +fx: U32) -> U32:
   +c1 = (Game.span3(cx, dx, ex) <= STORM_SPAN() : U32)
   +c2 = (Game.span3(cx, dx, fx) <= STORM_SPAN() : U32)
   +c3 = (Game.span3(cx, ex, fx) <= STORM_SPAN() : U32)
+  +c4 = (Game.span3(dx, ex, fx) <= STORM_SPAN() : U32)
   Game.pick(c1, Game.min3(cx, dx, ex),
     Game.pick(c2, Game.min3(cx, dx, fx),
-      Game.pick(c3, Game.min3(cx, ex, fx), Game.min3(dx, ex, fx))))
+      Game.pick(c3, Game.min3(cx, ex, fx),
+        Game.pick(c4, Game.min3(dx, ex, fx), 0))))
 
 def Game.rain_hi(+cx: U32, +dx: U32, +ex: U32, +fx: U32) -> U32:
   +c1 = (Game.span3(cx, dx, ex) <= STORM_SPAN() : U32)
   +c2 = (Game.span3(cx, dx, fx) <= STORM_SPAN() : U32)
   +c3 = (Game.span3(cx, ex, fx) <= STORM_SPAN() : U32)
+  +c4 = (Game.span3(dx, ex, fx) <= STORM_SPAN() : U32)
   Game.pick(c1, Game.max3(cx, dx, ex),
     Game.pick(c2, Game.max3(cx, dx, fx),
-      Game.pick(c3, Game.max3(cx, ex, fx), Game.max3(dx, ex, fx))))
+      Game.pick(c3, Game.max3(cx, ex, fx),
+        Game.pick(c4, Game.max3(dx, ex, fx), 0))))
 
 # One localized rain shower in the x band [x0, x1] over y 0..480:
 # 1-2px wide streaks (a lone 1px lane and a 2px lane per 5px column
@@ -825,11 +829,11 @@ def Game.rain(+x: U32, +y: U32, +x0: U32, +x1: U32, +wt: U32) -> Bool:
 
 # Five named distinct pillar colors: green, orange-red, blue, magenta,
 # yellow.
-def COLOR_0() -> U32: 816463103
-def COLOR_1() -> U32: 3764003071
-def COLOR_2() -> U32: 677437695
-def COLOR_3() -> U32: 3359164671
-def COLOR_4() -> U32: 3905962239
+def COLOR_0() -> U32: 3189308
+def COLOR_1() -> U32: 14703136
+def COLOR_2() -> U32: 2646240
+def COLOR_3() -> U32: 13121736
+def COLOR_4() -> U32: 15257664
 
 # Pillar color lookup by pipe pair color index 0..4.
 def Game.pillar_color(+c: U32) -> U32:
@@ -841,16 +845,16 @@ def Game.pillar_color(+c: U32) -> U32:
 # In-play HUD colors: three distinct contrasting tones -- orange-red
 # frame, dark face, white digits (never white-on-white).
 def HUD_FRAME() -> U32: COLOR_1()
-def HUD_FACE() -> U32: 540037375
-def HUD_DIGIT() -> U32: 4294967295
+def HUD_FACE() -> U32: 2109520
+def HUD_DIGIT() -> U32: 16777215
 
 # Ready / dead panel fills: colorful and each distinct from the light
 # text over it -- blue start panel, green RETRY panel (R hint), red
 # EXIT panel (Esc hint), and a dark banner behind the dead score.
-def PANEL_BLUE() -> U32: 609793279
-def PANEL_GREEN() -> U32: 747393279
-def PANEL_RED() -> U32: 2956474623
-def PANEL_DARK() -> U32: 540037375
+def PANEL_BLUE() -> U32: 2382004
+def PANEL_GREEN() -> U32: 2919504
+def PANEL_RED() -> U32: 11548728
+def PANEL_DARK() -> U32: 2109520
 
 # Pixel colors, front to back: dead UI (banner, digits, panels) over
 # the frozen world, bird rects (wing over beak over body), ready UI
@@ -895,15 +899,15 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
   +rhi = Game.rain_hi(cx, dx, ex, fx)
   +rx0 = Game.pick((rlo < CLOUD_W() : U32), 0, (rlo - CLOUD_W() : U32))
   +rx1 = Game.pick((512 < rhi : U32), 512, rhi)
-  Game.pick(over_text, 4294967295,
-    Game.pick(over_digit, 4294967295,
+  Game.pick(over_text, 16777215,
+    Game.pick(over_digit, 16777215,
       Game.pick(over_exit, PANEL_RED(),
         Game.pick(over_retry, PANEL_GREEN(),
           Game.pick(over_banner, PANEL_DARK(),
-  Game.pick(Game.bar(x, y, (BIRD_X() + 6 : U32), (by + 8 : U32), 10, 6), 4294967295,
-    Game.pick(Game.bar(x, y, (BIRD_X() + BODY_W() : U32), (by + 6 : U32), 8, 6), 4034404607,
-      Game.pick(Game.bar(x, y, BIRD_X(), by, BODY_W(), BODY_H()), 4208740095,
-        Game.pick(ui_text, 4294967295,
+  Game.pick(Game.bar(x, y, (BIRD_X() + 6 : U32), (by + 8 : U32), 10, 6), 16777215,
+    Game.pick(Game.bar(x, y, (BIRD_X() + BODY_W() : U32), (by + 6 : U32), 8, 6), 15759392,
+      Game.pick(Game.bar(x, y, BIRD_X(), by, BODY_W(), BODY_H()), 16440390,
+        Game.pick(ui_text, 16777215,
           Game.pick(ui_bar, PANEL_BLUE(),
             Game.pick(hud_digit, HUD_DIGIT(),
               Game.pick(hud_face, HUD_FACE(),
@@ -924,7 +928,7 @@ def Game.color(+x: U32, +y: U32, +g: Game) -> U32:
                   || Game.inside(x, y, 1, Game.capx(qx), (qy + gb : U32),
                     Game.capw(qx), PIPE_CAP_H()),
                   Game.pillar_color(qc),
-                  Game.pick(Game.rain(x, y, rx0, rx1, wt), RAIN_TINT(),
+                  Game.pick((storm && Game.rain(x, y, rx0, rx1, wt) : U32), RAIN_TINT(),
                   Game.pick(Game.bird(x, y, Game.birdx(wt, 0), 48)
                     || Game.bird(x, y, Game.birdx(wt, 1), 144), BIRD_TINT(),
                   Game.pick(Game.cloud(x, y, cx, 56) || Game.cloud(x, y, dx, 104)
