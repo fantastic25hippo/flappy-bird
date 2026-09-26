@@ -16,9 +16,41 @@ import ./difficulty.bend as Diff
 # four cloud clusters drift in ready and playing (cx / dx at
 # CLOUD_SPD_NEAR, ex / fx at CLOUD_SPD_FAR) and freeze when dead, as
 # do the tiny distant birds driven by the wt weather clock, which
-# ticks up (+1) while ready or playing and freezes when dead. A
+# ticks up (+1) while ready or playing and freezes when dead. The
+# drift/wt gate reads the post-step mode nmode, so clouds and the wt
+# clock freeze on the collision tick itself, the moment L14's dead
+# freeze begins. A
 # collision
 # only ends the run (mode 2).
+
+# Gap-top remix of one pair, selected through a match on that pair's
+# own wrap flag so the non-wrap branch keeps the old gap top without
+# ever calling remix_gy (a strict Game.pick would evaluate both
+# arms). The wrap arm calls remix_gy with the same (sibling, nseed,
+# score, gap) arguments as before.
+def Game.wrap_gy(+wrap: Bool, +sib: U32, +nseed: U32, +score: U32, +gap: U32, +keep: U32) -> U32:
+  match wrap:
+    case True{}:
+      Diff.Game.remix_gy(sib, nseed, score, gap)
+    case False{}:
+      keep
+
+# Next scroll speed, selected through matches so the untaken branches
+# never compute speed_of (a strict Game.pick would evaluate it either
+# way): ready and dead keep spd, a playing tick with no score change
+# reuses cur_spd, and only a playing tick whose score changed calls
+# Diff.Game.speed_of(nscore, wt).
+def Game.nspd_of(+play: Bool, +same: Bool, +cur_spd: U32, +spd: U32, +nscore: U32, +wt: U32) -> U32:
+  match play:
+    case True{}:
+      match same:
+        case True{}:
+          cur_spd
+        case False{}:
+          Diff.Game.speed_of(nscore, wt)
+    case False{}:
+      spd
+
 def Game.step(+g: S.Game) -> S.Game:
   S.Game{by, sp, dn, px, gy, pc, pt, scored, qx, qy, qc, qt, qscored, seed, mode, score, spd, space_held, r_held, cx, dx, ex, fx, wt} = g
   +play = ((0 < mode) && (mode < 2) : U32)
@@ -38,8 +70,8 @@ def Game.step(+g: S.Game) -> S.Game:
   +ngap = Diff.Game.gap_of(nty)
   +npt = S.Game.pick(awrap, nty, pt)
   +nqt = S.Game.pick(bwrap, nty, qt)
-  +ngy = S.Game.pick(awrap, Diff.Game.remix_gy(qy, nseed, score, ngap), gy)
-  +nqy = S.Game.pick(bwrap, Diff.Game.remix_gy(gy, nseed, score, ngap), qy)
+  +ngy = Game.wrap_gy(awrap, qy, nseed, score, ngap, gy)
+  +nqy = Game.wrap_gy(bwrap, gy, nseed, score, ngap, qy)
   +npc = S.Game.pick(awrap, U32.mod((pc + 2 : U32), 5), pc)
   +nqc = S.Game.pick(bwrap, U32.mod((qc + 2 : U32), 5), qc)
   +prx = Phys.Game.pipex(npx)
@@ -82,8 +114,9 @@ def Game.step(+g: S.Game) -> S.Game:
   +nscore = S.Game.pick(pass_b, (s1 + 1 : U32), s1)
   +nscored = S.Game.pickb(awrap, False{}, S.Game.pickb(pass_a, True{}, scored))
   +nqscored = S.Game.pickb(bwrap, False{}, S.Game.pickb(pass_b, True{}, qscored))
-  +nspd = S.Game.pick(play, Diff.Game.speed_of(nscore, wt), spd)
-  +drift = (mode < 2 : U32)
+  +same = U32.is_eq(nscore, score)
+  +nspd = Game.nspd_of(play, same, cur_spd, spd, nscore, wt)
+  +drift = (nmode < 2 : U32)
   +ncx = S.Game.pick((drift && (cx < S.CLOUD_SPD_NEAR()) : U32), 600,
     S.Game.pick(drift, (cx - S.CLOUD_SPD_NEAR() : U32), cx))
   +ndx = S.Game.pick((drift && (dx < S.CLOUD_SPD_NEAR()) : U32), 600,
