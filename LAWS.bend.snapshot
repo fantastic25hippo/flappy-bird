@@ -1,10 +1,10 @@
 # Behavioral and Structural Invariants (LAWS) for flappy-bird
 # Locked 2026-09-25 in Loop A (2026-09-25-flappy-bird-atmosphere-fixes.md)
 #
-# L1: Pi may create/edit only ./main.bend (the main.bend in this project directory).
+# L1: Pi may create/edit only these game files in this project directory: ./main.bend, ./state.bend, ./input.bend, ./physics.bend, ./difficulty.bend, ./step.bend, ./text.bend, ./scenery.bend, ./render.bend.
 #     Pi must not edit LAWS.bend, AGENTS.md, PROOF.bend, snapshot docs, examples/, grok-agy-pi?, projects/smoke-test-for-bend/, or any .c / Raylib / SDL2 file.
-# L2: main.bend must not import LAWS.bend or PROOF.bend.
-# L3: No @unsafe. No leftover ?TODO holes in main.bend.
+# L2: Those game .bend files must not import LAWS.bend or PROOF.bend.
+# L3: No @unsafe. No leftover ?TODO holes in those game .bend files.
 # L4: Windowed 2D App.run game: title Flappy Bird, size 512x512, main : IO(Unit).
 #     main calls App.run. No Window.open preflight.
 #     No CUDA, sockets, file writes, audio, C backends, Raylib, or SDL2.
