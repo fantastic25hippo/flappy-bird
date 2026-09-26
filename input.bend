@@ -15,9 +15,11 @@ def Game.press_space(+down: Bool, +g: S.Game) -> S.Game:
   +fresh = S.Game.pickb(down, Bool.not(space_held), False{})
   +flap = S.Game.pickb(fresh, ((0 < mode) && (mode < 2) : U32), False{})
   +launch = S.Game.pickb(fresh, (mode < 1 : U32), False{})
-  S.Game.sel(launch, S.Game{by, S.FLAP(), False{}, px, gy, pc, pt, scored, qx, qy, qc, qt, qscored, seed, 1, score, spd, down, r_held, cx, dx, ex, fx, wt},
-      S.Game.sel(flap, S.Game{by, S.FLAP(), False{}, px, gy, pc, pt, scored, qx, qy, qc, qt, qscored, seed, mode, score, spd, down, r_held, cx, dx, ex, fx, wt},
-        S.Game{by, sp, dn, px, gy, pc, pt, scored, qx, qy, qc, qt, qscored, seed, mode, score, spd, down, r_held, cx, dx, ex, fx, wt}))
+  +any = (launch || flap)
+  +nsp = S.Game.pick(any, S.FLAP(), sp)
+  +ndn = S.Game.pickb(any, False{}, dn)
+  +nmode = S.Game.pick(launch, 1, mode)
+  S.Game{by, nsp, ndn, px, gy, pc, pt, scored, qx, qy, qc, qt, qscored, seed, nmode, score, spd, down, r_held, cx, dx, ex, fx, wt}
 
 # A fresh R press while dead restarts; elsewhere R does nothing but
 # track its key state. `r_held` gives the rising edge.

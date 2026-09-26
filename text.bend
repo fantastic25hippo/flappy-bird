@@ -273,16 +273,38 @@ def Game.digit_c_at(+m: U32, +ox: U32, +oy: U32, +x: U32, +y: U32) -> Bool:
   +ly = S.Game.pick((y < oy : U32), 22, (y - oy : U32))
   Game.digit_c(m, lx, ly)
 
-# Dead-screen score: three 7-segment digits of score % 1000 computed
-# here in the view (hundreds, tens, ones); no extra Game fields.
-def Game.dead_score(+x: U32, +y: U32, +score: U32) -> Bool:
+# The shared score%1000 digit split: hundreds, tens, and ones of
+# score (left to right), computed here in the view; no extra Game
+# fields. Used by both the dead-screen score and the in-play HUD
+# score through Game.score_row: a Bend match can only take a pair
+# apart on a parameter, so the split's pair is consumed there.
+def Game.score3(+score: U32) -> U32 & (U32 & U32):
   +s = U32.mod(score, 1000)
   +d0 = U32.mod(s, 10)
   +d1 = U32.mod(U32.div(s, 10), 10)
   +d2 = U32.div(s, 100)
-  Game.digit_at(Game.digit_mask(d2), 212, 108, x, y)
-    || Game.digit_at(Game.digit_mask(d1), 244, 108, x, y)
-    || Game.digit_at(Game.digit_mask(d0), 276, 108, x, y)
+  (d2, (d1, d0))
+
+# One three-digit 7-segment row from the shared split ms: cells at
+# origins ox0, ox1, ox2 on row oy, drawn with the full 24x40 cells
+# (compact = False, dead screen) or the compact 14x22 ones
+# (compact = True, HUD).
+def Game.score_row(ms: U32 & (U32 & U32), compact: Bool, +ox0: U32, +ox1: U32, +ox2: U32, +oy: U32, +x: U32, +y: U32) -> Bool:
+  (d2, (d1, d0)) = ms
+  match compact:
+    case True{}:
+      Game.digit_c_at(Game.digit_mask(d2), ox0, oy, x, y)
+        || Game.digit_c_at(Game.digit_mask(d1), ox1, oy, x, y)
+        || Game.digit_c_at(Game.digit_mask(d0), ox2, oy, x, y)
+    case False{}:
+      Game.digit_at(Game.digit_mask(d2), ox0, oy, x, y)
+        || Game.digit_at(Game.digit_mask(d1), ox1, oy, x, y)
+        || Game.digit_at(Game.digit_mask(d0), ox2, oy, x, y)
+
+# Dead-screen score: the shared split in full 24x40 cells at (212,
+# 108), (244, 108), (276, 108).
+def Game.dead_score(+x: U32, +y: U32, +score: U32) -> Bool:
+  Game.score_row(Game.score3(score), False{}, 212, 244, 276, 108, x, y)
 
 # In-play HUD box: a named 72x32 box at (220, 8) with a thin 2px
 # frame, an inner face, and three compact digit cells.
@@ -291,15 +313,9 @@ def HUD_Y() -> U32: 8
 def HUD_W() -> U32: 72
 def HUD_H() -> U32: 32
 
-# In-play HUD score: three compact 14x22 7-segment digits of
-# score % 1000 inside the HUD face, computed here in the view; no
-# extra Game fields. The compact cells fit wholly inside the face and
-# never clip into the sky (the dead overlay keeps 24x40 cells).
+# In-play HUD score: the shared split in compact 14x22 cells at (232,
+# 13), (249, 13), (266, 13) inside the HUD face. The compact cells fit
+# wholly inside the face and never clip into the sky (the dead
+# overlay keeps 24x40 cells).
 def Game.hud_score(+x: U32, +y: U32, +score: U32) -> Bool:
-  +s = U32.mod(score, 1000)
-  +d0 = U32.mod(s, 10)
-  +d1 = U32.mod(U32.div(s, 10), 10)
-  +d2 = U32.div(s, 100)
-  Game.digit_c_at(Game.digit_mask(d2), 232, 13, x, y)
-    || Game.digit_c_at(Game.digit_mask(d1), 249, 13, x, y)
-    || Game.digit_c_at(Game.digit_mask(d0), 266, 13, x, y)
+  Game.score_row(Game.score3(score), True{}, 232, 249, 266, 13, x, y)
