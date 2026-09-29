@@ -1,0 +1,3 @@
+## 2026-09-26 - Scenery u = rx - x coordinate mapping is intentional for off-screen sliding
+Learning: In `scenery.bend` (`Game.cloud` and `Game.bird`), computing `u = rx - x` (distance leftward from right-edge `rx`) is designed so that when scenery items leave the left window edge (`rx < CLOUD_W` or `rx < 12`), `u` naturally ranges over `1..rx`, drawing the rightmost `rx` pixels without needing signed coordinates or underflowing U32. Replacing `u = rx - x` with left-edge relative `u = x - clx` causes scenery elements to flip horizontally right before sliding off-screen.
+Action next time: Do not attempt to refactor `u = rx - x` in `scenery.bend`.
