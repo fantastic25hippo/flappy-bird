@@ -5,6 +5,16 @@ import ./difficulty.bend as Diff
 import ./text.bend as Txt
 import ./scenery.bend as Sc
 
+# True when (x, y) is inside the upper shaft, upper cap, lower shaft, or lower cap of a pipe pair.
+def Game.pair_in(+x: U32, +y: U32, +px: U32, +pw: U32, +cx: U32, +cw: U32, +ty: U32, +by: U32) -> Bool:
+  Txt.Game.inside(x, y, 1, px, 0, pw, ty)
+    || Txt.Game.inside(x, y, 1, cx, (ty - S.PIPE_CAP_H() : U32),
+      cw, S.PIPE_CAP_H())
+    || Txt.Game.inside(x, y, 1, px, by,
+      pw, (496 - by : U32))
+    || Txt.Game.inside(x, y, 1, cx, by,
+      cw, S.PIPE_CAP_H())
+
 # Pixel colors, front to back: dead UI (banner, digits, panels) over
 # the frozen world, bird rects (wing over beak over body), ready UI
 # (title, SPACE text over the start bar), the in-play HUD (frame,
@@ -62,21 +72,9 @@ def Game.color(+x: U32, +y: U32, +g: S.Game) -> U32:
             S.Game.pick(hud_digit, Sc.HUD_DIGIT(),
               S.Game.pick(hud_face, Sc.HUD_FACE(),
                 S.Game.pick(hud_frame, Sc.HUD_FRAME(),
-                S.Game.pick(Txt.Game.inside(x, y, 1, apx, 0, apw, gy)
-                || Txt.Game.inside(x, y, 1, acx, (gy - S.PIPE_CAP_H() : U32),
-                  acw, S.PIPE_CAP_H())
-                || Txt.Game.inside(x, y, 1, apx, aby,
-                  apw, (496 - aby : U32))
-                || Txt.Game.inside(x, y, 1, acx, aby,
-                  acw, S.PIPE_CAP_H()),
+                S.Game.pick(Game.pair_in(x, y, apx, apw, acx, acw, gy, aby),
                 Sc.Game.pillar_color(pc),
-                S.Game.pick(Txt.Game.inside(x, y, 1, bpx, 0, bpw, qy)
-                  || Txt.Game.inside(x, y, 1, bcx, (qy - S.PIPE_CAP_H() : U32),
-                    bcw, S.PIPE_CAP_H())
-                  || Txt.Game.inside(x, y, 1, bpx, bby,
-                    bpw, (496 - bby : U32))
-                  || Txt.Game.inside(x, y, 1, bcx, bby,
-                    bcw, S.PIPE_CAP_H()),
+                S.Game.pick(Game.pair_in(x, y, bpx, bpw, bcx, bcw, qy, bby),
                   Sc.Game.pillar_color(qc),
                   S.Game.pick(Sc.Game.bird(x, y, bx0, 48)
                     || Sc.Game.bird(x, y, bx1, 144), Sc.BIRD_TINT(),
@@ -93,6 +91,10 @@ def Game.color(+x: U32, +y: U32, +g: S.Game) -> U32:
                           S.Game.pick(Txt.Game.bar(x, y, 0, 0, 512, 256), Sc.SKY_TOP(),
                             S.Game.pick(Txt.Game.bar(x, y, 0, 256, 512, 128), Sc.SKY_MID(),
                               Sc.SKY_PALE()))))))))))))))))))))))))))
+
+# Subtracts k from v with clamp at 0 when v < k.
+def Game.sub0(+v: U32, +k: U32) -> U32:
+  S.Game.pick((v < k : U32), 0, (v - k : U32))
 
 # True when the whole [x0, y0, s] cell is one flat color. The
 # in-play HUD [220, 8, 72, 32] (2px frame, face, compact 3-digit
@@ -135,14 +137,12 @@ def Game.flat(d: Nat, +x0: U32, +y0: U32, +g: S.Game) -> Bool:
   +acw = Phys.Game.capw(px)
   +bcx = Phys.Game.capx(qx)
   +bcw = Phys.Game.capw(qx)
-  +clx = S.Game.pick((cx < S.CLOUD_W() : U32), 0, (cx - S.CLOUD_W() : U32))
-  +dlx = S.Game.pick((dx < S.CLOUD_W() : U32), 0, (dx - S.CLOUD_W() : U32))
-  +elx = S.Game.pick((ex < S.CLOUD_W() : U32), 0, (ex - S.CLOUD_W() : U32))
-  +flx = S.Game.pick((fx < S.CLOUD_W() : U32), 0, (fx - S.CLOUD_W() : U32))
-  +bl0 = S.Game.pick((Sc.Game.birdx(wt, 0) < 12 : U32), 0,
-    (Sc.Game.birdx(wt, 0) - 12 : U32))
-  +bl1 = S.Game.pick((Sc.Game.birdx(wt, 1) < 12 : U32), 0,
-    (Sc.Game.birdx(wt, 1) - 12 : U32))
+  +clx = Game.sub0(cx, S.CLOUD_W())
+  +dlx = Game.sub0(dx, S.CLOUD_W())
+  +elx = Game.sub0(ex, S.CLOUD_W())
+  +flx = Game.sub0(fx, S.CLOUD_W())
+  +bl0 = Game.sub0(Sc.Game.birdx(wt, 0), 12)
+  +bl1 = Game.sub0(Sc.Game.birdx(wt, 1), 12)
   +ready = (mode < 1 : U32)
   +dead = U32.is_eq(mode, 2)
   +hud = U32.is_eq(mode, 1)
