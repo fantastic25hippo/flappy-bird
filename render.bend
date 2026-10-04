@@ -21,6 +21,16 @@ def Game.color(+x: U32, +y: U32, +g: S.Game) -> U32:
   +hud_on = U32.is_eq(mode, 1)
   +ga = Diff.Game.gap_of(pt)
   +gb = Diff.Game.gap_of(qt)
+  +apx = Phys.Game.pipex(px)
+  +apw = Phys.Game.pipew(px)
+  +acx = Phys.Game.capx(px)
+  +acw = Phys.Game.capw(px)
+  +aby = (gy + ga : U32)
+  +bpx = Phys.Game.pipex(qx)
+  +bpw = Phys.Game.pipew(qx)
+  +bcx = Phys.Game.capx(qx)
+  +bcw = Phys.Game.capw(qx)
+  +bby = (qy + gb : U32)
   +bx0 = Sc.Game.birdx(wt, 0)
   +bx1 = Sc.Game.birdx(wt, 1)
   +ui_text = S.Game.pickb(ready, Txt.Game.title(x, y) || Txt.Game.space_word(x, y), False{})
@@ -52,21 +62,21 @@ def Game.color(+x: U32, +y: U32, +g: S.Game) -> U32:
             S.Game.pick(hud_digit, Sc.HUD_DIGIT(),
               S.Game.pick(hud_face, Sc.HUD_FACE(),
                 S.Game.pick(hud_frame, Sc.HUD_FRAME(),
-                S.Game.pick(Txt.Game.inside(x, y, 1, Phys.Game.pipex(px), 0, Phys.Game.pipew(px), gy)
-                || Txt.Game.inside(x, y, 1, Phys.Game.capx(px), (gy - S.PIPE_CAP_H() : U32),
-                  Phys.Game.capw(px), S.PIPE_CAP_H())
-                || Txt.Game.inside(x, y, 1, Phys.Game.pipex(px), (gy + ga : U32),
-                  Phys.Game.pipew(px), (496 - (gy + ga : U32) : U32))
-                || Txt.Game.inside(x, y, 1, Phys.Game.capx(px), (gy + ga : U32),
-                  Phys.Game.capw(px), S.PIPE_CAP_H()),
+                S.Game.pick(Txt.Game.inside(x, y, 1, apx, 0, apw, gy)
+                || Txt.Game.inside(x, y, 1, acx, (gy - S.PIPE_CAP_H() : U32),
+                  acw, S.PIPE_CAP_H())
+                || Txt.Game.inside(x, y, 1, apx, aby,
+                  apw, (496 - aby : U32))
+                || Txt.Game.inside(x, y, 1, acx, aby,
+                  acw, S.PIPE_CAP_H()),
                 Sc.Game.pillar_color(pc),
-                S.Game.pick(Txt.Game.inside(x, y, 1, Phys.Game.pipex(qx), 0, Phys.Game.pipew(qx), qy)
-                  || Txt.Game.inside(x, y, 1, Phys.Game.capx(qx), (qy - S.PIPE_CAP_H() : U32),
-                    Phys.Game.capw(qx), S.PIPE_CAP_H())
-                  || Txt.Game.inside(x, y, 1, Phys.Game.pipex(qx), (qy + gb : U32),
-                    Phys.Game.pipew(qx), (496 - (qy + gb : U32) : U32))
-                  || Txt.Game.inside(x, y, 1, Phys.Game.capx(qx), (qy + gb : U32),
-                    Phys.Game.capw(qx), S.PIPE_CAP_H()),
+                S.Game.pick(Txt.Game.inside(x, y, 1, bpx, 0, bpw, qy)
+                  || Txt.Game.inside(x, y, 1, bcx, (qy - S.PIPE_CAP_H() : U32),
+                    bcw, S.PIPE_CAP_H())
+                  || Txt.Game.inside(x, y, 1, bpx, bby,
+                    bpw, (496 - bby : U32))
+                  || Txt.Game.inside(x, y, 1, bcx, bby,
+                    bcw, S.PIPE_CAP_H()),
                   Sc.Game.pillar_color(qc),
                   S.Game.pick(Sc.Game.bird(x, y, bx0, 48)
                     || Sc.Game.bird(x, y, bx1, 144), Sc.BIRD_TINT(),
