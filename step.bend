@@ -51,6 +51,17 @@ def Game.nspd_of(+play: Bool, +same: Bool, +cur_spd: U32, +spd: U32, +nscore: U3
     case False{}:
       spd
 
+def Game.pair_hit(+sh: Bool, +cp: Bool, +iny0: U32, +iny1: U32, +gy: U32, +by: U32) -> Bool:
+  ((sh && (iny0 < gy))
+    || (sh && (by < iny1))
+    || (cp && (iny0 < gy) && ((gy - S.PIPE_CAP_H() : U32) < iny1))
+    || (cp && (iny0 < (by + S.PIPE_CAP_H() : U32)) && (by < iny1))
+    : U32)
+
+def Game.cloud_next(+drift: Bool, +c: U32, +spd_const: U32) -> U32:
+  S.Game.pick((drift && (c < spd_const) : U32), 600,
+    S.Game.pick(drift, (c - spd_const : U32), c))
+
 def Game.step(+g: S.Game) -> S.Game:
   S.Game{by, sp, dn, px, gy, pc, pt, scored, qx, qy, qc, qt, qscored, seed, mode, score, spd, space_held, r_held, cx, dx, ex, fx, wt} = g
   +play = ((0 < mode) && (mode < 2) : U32)
@@ -94,16 +105,8 @@ def Game.step(+g: S.Game) -> S.Game:
   +sh_b = ((inx0 < (qrx + qrw : U32)) && (qrx < inx1) : U32)
   +cp_a = ((inx0 < (pcx + pcw : U32)) && (pcx < inx1) : U32)
   +cp_b = ((inx0 < (qcx + qcw : U32)) && (qcx < inx1) : U32)
-  +hit_a = ((sh_a && (iny0 < ngy))
-    || (sh_a && (aby < iny1))
-    || (cp_a && (iny0 < ngy) && ((ngy - S.PIPE_CAP_H() : U32) < iny1))
-    || (cp_a && (iny0 < (aby + S.PIPE_CAP_H() : U32)) && (aby < iny1))
-    : U32)
-  +hit_b = ((sh_b && (iny0 < nqy))
-    || (sh_b && (bby < iny1))
-    || (cp_b && (iny0 < nqy) && ((nqy - S.PIPE_CAP_H() : U32) < iny1))
-    || (cp_b && (iny0 < (bby + S.PIPE_CAP_H() : U32)) && (bby < iny1))
-    : U32)
+  +hit_a = Game.pair_hit(sh_a, cp_a, iny0, iny1, ngy, aby)
+  +hit_b = Game.pair_hit(sh_b, cp_b, iny0, iny1, nqy, bby)
   +hit = (hit_a || hit_b : U32)
   +fallen = (hit || (ny < 1) || (496 <= ny) : U32)
   +dead = (play && fallen : U32)
@@ -117,14 +120,10 @@ def Game.step(+g: S.Game) -> S.Game:
   +same = U32.is_eq(nscore, score)
   +nspd = Game.nspd_of(play, same, cur_spd, spd, nscore, wt)
   +drift = (nmode < 2 : U32)
-  +ncx = S.Game.pick((drift && (cx < S.CLOUD_SPD_NEAR()) : U32), 600,
-    S.Game.pick(drift, (cx - S.CLOUD_SPD_NEAR() : U32), cx))
-  +ndx = S.Game.pick((drift && (dx < S.CLOUD_SPD_NEAR()) : U32), 600,
-    S.Game.pick(drift, (dx - S.CLOUD_SPD_NEAR() : U32), dx))
-  +nex = S.Game.pick((drift && (ex < S.CLOUD_SPD_FAR()) : U32), 600,
-    S.Game.pick(drift, (ex - S.CLOUD_SPD_FAR() : U32), ex))
-  +nfx = S.Game.pick((drift && (fx < S.CLOUD_SPD_FAR()) : U32), 600,
-    S.Game.pick(drift, (fx - S.CLOUD_SPD_FAR() : U32), fx))
+  +ncx = Game.cloud_next(drift, cx, S.CLOUD_SPD_NEAR())
+  +ndx = Game.cloud_next(drift, dx, S.CLOUD_SPD_NEAR())
+  +nex = Game.cloud_next(drift, ex, S.CLOUD_SPD_FAR())
+  +nfx = Game.cloud_next(drift, fx, S.CLOUD_SPD_FAR())
   +nwt = S.Game.pick(drift, (wt + 1 : U32), wt)
   S.Game{ny, nsp, ndn, npx, ngy, npc, npt, nscored, nqx, nqy, nqc, nqt, nqscored, nseed, nmode, nscore, nspd, space_held, r_held, ncx, ndx, nex, nfx, nwt}
 
